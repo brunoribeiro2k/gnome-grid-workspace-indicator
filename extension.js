@@ -10,47 +10,77 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
 import GObject from 'gi://GObject';
 import St from 'gi://St';
+import Clutter from 'gi://Clutter';
 
-import {Extension, gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
+import { Extension, gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
-import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-const Indicator = GObject.registerClass(
-class Indicator extends PanelMenu.Button {
+const WorkspaceIndicator = GObject.registerClass(
+class WorkspaceIndicator extends PanelMenu.Button {
     _init() {
-        super._init(0.0, _('My Shiny Indicator'));
+        // Create a panel button with a descriptive name.
+        super._init(0.0, _('Workspace Indicator'));
 
-        this.add_child(new St.Icon({
-            icon_name: 'face-smile-symbolic',
-            style_class: 'system-status-icon',
-        }));
-
-        let item = new PopupMenu.PopupMenuItem(_('Show Notification'));
-        item.connect('activate', () => {
-            Main.notify(_('Whatʼs up, folks?'));
+        // Create a label to display the workspace number.
+        this._label = new St.Label({
+            text: '',
+            y_align: Clutter.ActorAlign.CENTER
         });
-        this.menu.addMenuItem(item);
+        this.add_child(this._label);
+
+        // Connect to the signal that fires when the active workspace changes.
+        this._activeWsSignalId = global.workspace_manager.connect('active-workspace-changed', () => {
+            log('Active workspace changed'); // Debug log
+            this._updateWorkspace();
+        });
+
+        // Update the indicator immediately.
+        this._updateWorkspace();
+    }
+
+    _updateWorkspace() {
+        try {
+            // Get the current active workspace index (0-based) and add 1.
+            let activeIndex = global.workspace_manager.get_active_workspace_index();
+            let workspaceNumber = activeIndex + 1;
+
+            log(`Active workspace index: ${activeIndex}`); // Debug log
+
+            // Display only numbers from 1 to 9.
+            this._label.set_text(workspaceNumber.toString());
+        } catch (error) {
+            logError(error, 'Failed to update workspace indicator');
+        }
+    }
+
+    destroy() {
+        // Disconnect the workspace signal when the indicator is destroyed.
+        if (this._activeWsSignalId) {
+            global.workspace_manager.disconnect(this._activeWsSignalId);
+            this._activeWsSignalId = null;
+        }
+        super.destroy();
     }
 });
 
 export default class IndicatorExampleExtension extends Extension {
     enable() {
-        this._indicator = new Indicator();
+        // Instantiate and add the indicator to the GNOME panel.
+        this._indicator = new WorkspaceIndicator();
         Main.panel.addToStatusArea(this.uuid, this._indicator);
     }
 
     disable() {
-        this._indicator.destroy();
-        this._indicator = null;
+        // Clean up by destroying the indicator.
+        if (this._indicator) {
+            this._indicator.destroy();
+            this._indicator = null;
+        }
     }
 }
