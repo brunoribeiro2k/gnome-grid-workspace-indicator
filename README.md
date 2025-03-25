@@ -12,3 +12,14 @@ A GNOME Shell extension to display and manage workspaces with icons.
    ```bash
    git clone https://github.com/yourusername/workspace-indicator.git
    cd workspace-indicator
+   ``
+
+2. Install the extension
+   ```bash
+   make install
+   ```
+
+3. Restart gnome-shell and activate the extension
+   1. Alt + F2
+   2. Type "r" and press Enter
+   3. Enable the extension via extensions settings or gnome-enable gsi@fett2k.com
