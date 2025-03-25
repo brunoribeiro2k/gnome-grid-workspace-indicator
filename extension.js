@@ -23,6 +23,25 @@ import { Extension, gettext as _ } from 'resource:///org/gnome/shell/extensions/
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
+// Define the active log level.
+const LOG_LEVEL = 'error';
+
+// Logging utility function.
+function logWithLevel(level, message, error = null) {
+    const levels = ['debug', 'info', 'error'];
+    const currentLevelIndex = levels.indexOf(LOG_LEVEL);
+    const messageLevelIndex = levels.indexOf(level);
+
+    // Only log messages that are at or above the active log level.
+    if (messageLevelIndex >= currentLevelIndex) {
+        if (level === 'error' && error) {
+            logError(error, message);
+        } else {
+            log(`[${level.toUpperCase()}] ${message}`);
+        }
+    }
+}
+
 const WorkspaceIndicator = GObject.registerClass(
 class WorkspaceIndicator extends PanelMenu.Button {
     _init(extension) {
@@ -103,26 +122,26 @@ class WorkspaceIndicator extends PanelMenu.Button {
         try {
             // Get the current active workspace index (0-based).
             let activeIndex = global.workspace_manager.get_active_workspace_index();
-            log(`Active workspace index: ${activeIndex}`);
+            logWithLevel('debug', `Active workspace index: ${activeIndex}`);
 
             // Get the workspace dimensions.
             let [rows, cols] = this._getWorkspaceDimensions();
 
             // Get the workspace coordinates.
             let [x, y] = this._getWorkspaceCoordinates(activeIndex, cols);
-            log(`Workspace coordinates: (${x}, ${y})`);
+            logWithLevel('debug', `Workspace coordinates: (${x}, ${y})`);
 
             // Generate the SVG icon for the current workspace.
             let svgContent = this._generateSVGIcon(x, y, rows, cols);
             let tempFilePath = `${GLib.get_tmp_dir()}/workspace_${rows}x${cols}_${x}_${y}.svg`;
             GLib.file_set_contents(tempFilePath, svgContent);
-            log(`Generated SVG saved to: ${tempFilePath}`);
+            logWithLevel('debug', `Generated SVG saved to: ${tempFilePath}`);
 
             // Set the icon for the current workspace.
             this._icon.gicon = Gio.icon_new_for_string(tempFilePath);
-            log(`Updated workspace icon to: ${tempFilePath}`);
+            logWithLevel('debug', `Updated workspace icon to: ${tempFilePath}`);
         } catch (error) {
-            logError(error, 'Failed to update workspace indicator');
+            logWithLevel('error', 'Failed to update workspace indicator', error);
         }
     }
 
@@ -136,7 +155,7 @@ class WorkspaceIndicator extends PanelMenu.Button {
 
         // Ensure the new index is within valid bounds.
         if (newIndex < 0 || newIndex >= numWorkspaces) {
-            log(`Cannot switch to workspace ${newIndex}: Out of bounds`);
+            logWithLevel('debug', `Cannot switch to workspace ${newIndex}: Out of bounds`);
             return;
         }
 
@@ -144,7 +163,7 @@ class WorkspaceIndicator extends PanelMenu.Button {
         let newWorkspace = workspaceManager.get_workspace_by_index(newIndex);
         if (newWorkspace) {
             newWorkspace.activate(global.get_current_time());
-            log(`Switched to workspace ${newIndex}`);
+            logWithLevel('debug', `Switched to workspace ${newIndex}`);
         }
     }
 
