@@ -38,6 +38,21 @@ class WorkspaceIndicator extends PanelMenu.Button {
         });
         this.add_child(this._icon);
 
+        // Connect a click event to toggle the overview.
+        this.connect('button-press-event', () => {
+            Main.overview.toggle(); // Toggle the GNOME Shell overview
+        });
+
+        // Connect a scroll event to iterate through workspaces.
+        this.connect('scroll-event', (actor, event) => {
+            let direction = event.get_scroll_direction();
+            if (direction === Clutter.ScrollDirection.UP) {
+                this._switchWorkspace(-1); // Scroll up to go to the previous workspace
+            } else if (direction === Clutter.ScrollDirection.DOWN) {
+                this._switchWorkspace(1); // Scroll down to go to the next workspace
+            }
+        });
+
         // Connect to the signal that fires when the active workspace changes.
         this._activeWsSignalId = global.workspace_manager.connect('active-workspace-changed', () => {
             this._updateWorkspace();
@@ -88,6 +103,28 @@ class WorkspaceIndicator extends PanelMenu.Button {
             log(`Updated workspace icon to: ${iconPath}`); // Debug log
         } catch (error) {
             logError(error, 'Failed to update workspace indicator');
+        }
+    }
+
+    _switchWorkspace(offset) {
+        let workspaceManager = global.workspace_manager;
+        let activeIndex = workspaceManager.get_active_workspace_index();
+        let numWorkspaces = workspaceManager.get_n_workspaces();
+
+        // Calculate the new workspace index without wrapping.
+        let newIndex = activeIndex + offset;
+
+        // Ensure the new index is within valid bounds.
+        if (newIndex < 0 || newIndex >= numWorkspaces) {
+            log(`Cannot switch to workspace ${newIndex}: Out of bounds`); // Debug log
+            return;
+        }
+
+        // Activate the new workspace.
+        let newWorkspace = workspaceManager.get_workspace_by_index(newIndex);
+        if (newWorkspace) {
+            newWorkspace.activate(global.get_current_time());
+            log(`Switched to workspace ${newIndex}`); // Debug log
         }
     }
 
