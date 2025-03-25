@@ -16,6 +16,7 @@
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
+import Gio from 'gi://Gio';
 
 import { Extension, gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
@@ -23,20 +24,22 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 const WorkspaceIndicator = GObject.registerClass(
 class WorkspaceIndicator extends PanelMenu.Button {
-    _init() {
-        // Create a panel button with a descriptive name.
+    _init(extension) {
         super._init(0.0, _('Workspace Indicator'));
 
-        // Create a label to display the workspace number.
-        this._label = new St.Label({
-            text: '',
-            y_align: Clutter.ActorAlign.CENTER
+        // Get the extension's directory path using the dir property.
+        this._extensionPath = extension.dir.get_path();
+        log(`Extension path: ${this._extensionPath}`); // Debug log
+
+        // Create an icon to display the workspace indicator.
+        this._icon = new St.Icon({
+            gicon: null, // Placeholder for the icon
+            style_class: 'workspace-indicator-icon',
         });
-        this.add_child(this._label);
+        this.add_child(this._icon);
 
         // Connect to the signal that fires when the active workspace changes.
         this._activeWsSignalId = global.workspace_manager.connect('active-workspace-changed', () => {
-            log('Active workspace changed'); // Debug log
             this._updateWorkspace();
         });
 
@@ -44,16 +47,45 @@ class WorkspaceIndicator extends PanelMenu.Button {
         this._updateWorkspace();
     }
 
+    _getWorkspaceNumber(idx) {
+        return idx + 1
+    }
+
+    _getWorkspaceCoordinates(idx, h, w) {
+        let x = idx % w;
+        let y = Math.floor(idx / h);
+        return [y + 1, x + 1];
+    }
+
+    _getIconFileName(idx) {
+        let [x, y] = this._getWorkspaceCoordinates(idx, 3, 3); // Assuming a 3x3 grid
+        return `grid_${x}_${y}.svg`;
+    }
+
     _updateWorkspace() {
         try {
-            // Get the current active workspace index (0-based) and add 1.
+            // Get the current active workspace index (0-based).
             let activeIndex = global.workspace_manager.get_active_workspace_index();
-            let workspaceNumber = activeIndex + 1;
-
             log(`Active workspace index: ${activeIndex}`); // Debug log
 
-            // Display only numbers from 1 to 9.
-            this._label.set_text(workspaceNumber.toString());
+            // Get the icon file name for the active workspace.
+            let iconFileName = this._getIconFileName(activeIndex);
+            log(`Icon file name: ${iconFileName}`); // Debug log
+
+            // Construct the full path to the icon.
+            let iconPath = `${this._extensionPath}/icons/${iconFileName}`;
+            log(`Icon path: ${iconPath}`); // Debug log
+
+            // Check if the file exists.
+            let file = Gio.File.new_for_path(iconPath);
+            if (!file.query_exists(null)) {
+                logError(new Error(`Icon file does not exist: ${iconPath}`));
+                return;
+            }
+
+            // Set the icon for the current workspace.
+            this._icon.gicon = Gio.icon_new_for_string(iconPath);
+            log(`Updated workspace icon to: ${iconPath}`); // Debug log
         } catch (error) {
             logError(error, 'Failed to update workspace indicator');
         }
@@ -72,7 +104,7 @@ class WorkspaceIndicator extends PanelMenu.Button {
 export default class IndicatorExampleExtension extends Extension {
     enable() {
         // Instantiate and add the indicator to the GNOME panel.
-        this._indicator = new WorkspaceIndicator();
+        this._indicator = new WorkspaceIndicator(this);
         Main.panel.addToStatusArea(this.uuid, this._indicator);
     }
 
