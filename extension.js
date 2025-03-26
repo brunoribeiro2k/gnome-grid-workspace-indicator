@@ -125,20 +125,22 @@ const WorkspaceIndicator = GObject.registerClass(
                 // Get the workspace coordinates.
                 let [x, y] = this._getWorkspaceCoordinates(activeIndex, cols);
                 logWithLevel('debug', `Workspace coordinates: (${x}, ${y})`);
-
+        
                 // Get workspaces with open apps.
                 let withApps = this._getWorkspacesWithApps()
                 logWithLevel('debug', `Workspaces with active apps: ${withApps}`)
                 
                 // Generate the SVG icon for the current workspace.
                 let svgContent = this._getSvgGenerator().call(this, x, y, rows, cols, withApps);
-                let tempFilePath = `${GLib.get_tmp_dir()}/workspace_${rows}x${cols}_${x}_${y}.svg`;
-                GLib.file_set_contents(tempFilePath, svgContent);
-                logWithLevel('debug', `Generated SVG saved to: ${tempFilePath}`);
                 
-                // Set the icon for the current workspace.
-                this._icon.gicon = Gio.icon_new_for_string(tempFilePath);
-                logWithLevel('debug', `Updated workspace icon to: ${tempFilePath}`);
+                // Create a GBytes object from the SVG content
+                let bytes = GLib.Bytes.new(new TextEncoder().encode(svgContent));
+                
+                // Create a BytesIcon directly from the GBytes
+                this._icon.gicon = new Gio.BytesIcon({ bytes: bytes });
+                this._icon.icon_type = St.IconType.SYMBOLIC;
+                
+                logWithLevel('debug', 'Updated workspace icon from memory');
             } catch (error) {
                 logWithLevel('error', 'Failed to update workspace indicator', error);
             }
