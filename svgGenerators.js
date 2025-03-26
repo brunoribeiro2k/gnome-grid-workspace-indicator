@@ -179,11 +179,10 @@ export class SVGGenerators {
         const cellWidth = 30 / cols;
         const cellHeight = 30 / rows;
         const radius = Math.min(cellWidth, cellHeight) / 3;
-        const highlightRadius = radius * 1.5;
         
         let svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30">
-    `;
+`;
         
         // Draw all cells as gray circles with light transparency.
         for (let row = 0; row < rows; row++) {
@@ -191,12 +190,14 @@ export class SVGGenerators {
                 const cx = col * cellWidth + cellWidth / 2;
                 const cy = row * cellHeight + cellHeight / 2;
                 const isHighlighted = (col === x && row === y);
+                const hasApps = withApps.some(([appX, appY]) => appX === col && appY === row);
                 
                 svg += `
-        <circle cx="${cx}" cy="${cy}" r="${radius}" 
-            fill="${isHighlighted ? 'white' : 'gray'}" 
-            fill-opacity="${isHighlighted ? 1 : 0.5}" />
-            `;
+<circle cx="${cx}" cy="${cy}" r="${radius}" 
+    fill="${isHighlighted ? 'white' : 'gray'}" 
+    fill-opacity="${isHighlighted ? 1 : 0.5}"
+    ${hasApps ? 'stroke="white" stroke-width="1"' : ''} />
+    `;
             }
         }
         

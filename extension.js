@@ -79,6 +79,33 @@ const WorkspaceIndicator = GObject.registerClass(
             this._activeWsSignalId = global.workspace_manager.connect('active-workspace-changed', () => {
                 this._updateWorkspace();
             });
+
+            // Connect to window creation
+            this._windowCreatedId = global.display.connect('window-created', () => {
+                this._updateWorkspace();
+            });
+
+            // Connect to window signals for each workspace
+            this._windowSignals = [];
+            this._connectWindowSignals();
+
+            // Connect to workspace number changes to update window signals
+            this._wsAddedId = global.workspace_manager.connect('workspace-added', () => {
+                // Add small delay to ensure layout is updated
+                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
+                    this._connectWindowSignals();
+                    this._updateWorkspace();
+                    return GLib.SOURCE_REMOVE;
+                });
+            });
+            this._wsRemovedId = global.workspace_manager.connect('workspace-removed', () => {
+                // Add small delay to ensure layout is updated
+                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
+                    this._connectWindowSignals();
+                    this._updateWorkspace();
+                    return GLib.SOURCE_REMOVE;
+                });
+            });
             
             // Update the indicator immediately.
             this._updateWorkspace();
@@ -139,7 +166,7 @@ const WorkspaceIndicator = GObject.registerClass(
                 // Create a BytesIcon directly from the GBytes
                 this._icon.gicon = new Gio.BytesIcon({ bytes: bytes });
                 
-                logWithLevel('debug', 'Updated workspace icon from memory');
+                logWithLevel('debug', `Updated workspace icon from memory: ${svgContent}`);
             } catch (error) {
                 logWithLevel('error', 'Failed to update workspace indicator', error);
             }
@@ -166,6 +193,28 @@ const WorkspaceIndicator = GObject.registerClass(
                 logWithLevel('debug', `Switched to workspace ${newIndex}`);
             }
         }
+
+        _connectWindowSignals() {
+            // Disconnect existing signals
+            this._disconnectWindowSignals();
+            
+            // Connect to window-removed signal for each workspace
+            let numWorkspaces = global.workspace_manager.get_n_workspaces();
+            for (let i = 0; i < numWorkspaces; i++) {
+                let workspace = global.workspace_manager.get_workspace_by_index(i);
+                let signalId = workspace.connect('window-removed', () => {
+                    this._updateWorkspace();
+                });
+                this._windowSignals.push([workspace, signalId]);
+            }
+        }
+
+        _disconnectWindowSignals() {
+            for (let [workspace, signalId] of this._windowSignals) {
+                workspace.disconnect(signalId);
+            }
+            this._windowSignals = [];
+        }
         
         destroy() {
             // Disconnect the workspace signal when the indicator is destroyed.
@@ -173,6 +222,22 @@ const WorkspaceIndicator = GObject.registerClass(
                 global.workspace_manager.disconnect(this._activeWsSignalId);
                 this._activeWsSignalId = null;
             }
+            if (this._windowCreatedId) {
+                global.display.disconnect(this._windowCreatedId);
+                this._windowCreatedId = null;
+            }
+            if (this._wsAddedId) {
+                global.workspace_manager.disconnect(this._wsAddedId);
+                this._wsAddedId = null;
+            }
+            if (this._wsRemovedId) {
+                global.workspace_manager.disconnect(this._wsRemovedId);
+                this._wsRemovedId = null;
+            }
+            
+            // Disconnect window signals
+            this._disconnectWindowSignals();
+            
             super.destroy();
         }
     });
