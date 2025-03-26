@@ -22,10 +22,10 @@ import GLib from 'gi://GLib';
 import { Extension, gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import { SVGGenerators } from './svgGenerators.js';
+import { SVGGenerator } from './svgGenerator.js';
 
 // Define the active log level.
-const LOG_LEVEL = 'error';
+const LOG_LEVEL = 'debug';
 
 // Logging utility function.
 function logWithLevel(level, message, error = null) {
@@ -46,17 +46,18 @@ function logWithLevel(level, message, error = null) {
 const WorkspaceIndicator = GObject.registerClass(
     class WorkspaceIndicator extends PanelMenu.Button {
         
-        _getSvgGenerator() {
-            return SVGGenerators.circlesNoGrid;
-        }
-        
         _init(extension) {
             super._init(0.0, _('Workspace Indicator'));
             
+            // Get panel height for icon sizing
+            const panelHeight = Main.panel.height;
+            logWithLevel('debug', `Panel height: ${panelHeight}`);
+            
             // Create an icon to display the workspace indicator.
             this._icon = new St.Icon({
-                gicon: null, // Placeholder for the icon
+                gicon: null,
                 style_class: 'workspace-indicator-icon',
+                icon_size: Math.floor(panelHeight * 1) // Make icon slightly smaller than panel
             });
             this.add_child(this._icon);
             
@@ -158,7 +159,7 @@ const WorkspaceIndicator = GObject.registerClass(
                 logWithLevel('debug', `Workspaces with active apps: ${JSON.stringify(withApps)}`)
                 
                 // Generate the SVG icon for the current workspace.
-                let svgContent = this._getSvgGenerator().call(this, x, y, rows, cols, withApps);
+                let svgContent = SVGGenerator.create(x, y, rows, cols, withApps, this._icon.icon_size);
                 
                 // Create a GBytes object from the SVG content
                 let bytes = GLib.Bytes.new(new TextEncoder().encode(svgContent));
