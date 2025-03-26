@@ -4,5 +4,6 @@
   "uuid": "gsi@fett2k.com",
   "shell-version": [
     "46"
-  ]
+  ],
+  "settings-schema": "org.gnome.shell.extensions.gsi"
 }

@@ -19,9 +19,9 @@ import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
-import { Extension, gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
-import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
+import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import { SVGGenerator } from './svgGenerator.js';
 
 // Define the active log level.
@@ -167,7 +167,7 @@ const WorkspaceIndicator = GObject.registerClass(
                 // Create a BytesIcon directly from the GBytes
                 this._icon.gicon = new Gio.BytesIcon({ bytes: bytes });
                 
-                logWithLevel('debug', `Updated workspace icon from memory: ${svgContent}`);
+                logWithLevel('debug', `Updated workspace icon from memory`);
             } catch (error) {
                 logWithLevel('error', 'Failed to update workspace indicator', error);
             }
@@ -243,18 +243,53 @@ const WorkspaceIndicator = GObject.registerClass(
         }
     });
     
-    export default class IndicatorExampleExtension extends Extension {
-        enable() {
-            // Instantiate and add the indicator to the GNOME panel.
-            this._indicator = new WorkspaceIndicator(this);
-            Main.panel.addToStatusArea(this.uuid, this._indicator);
+export default class IndicatorExampleExtension extends Extension {
+    constructor(metadata) {
+        super(metadata);
+        // Pass the schema ID to getSettings
+        this._settings = this.getSettings();
+    }
+
+    enable() {
+        // Update SVGGenerator config from settings
+        SVGGenerator.DefaultConfig.grid.visible = this._settings.get_boolean('grid-visible');
+        SVGGenerator.DefaultConfig.grid.color = this._settings.get_string('grid-color');
+        SVGGenerator.DefaultConfig.cell.shape = this._settings.get_string('cell-shape');
+        SVGGenerator.DefaultConfig.cell.size = this._settings.get_int('cell-size');
+
+        // Connect to settings changes
+        this._settingsChangedId = this._settings.connect('changed', () => {
+            this._updateConfig();
+        });
+
+        // Instantiate and add the indicator to the GNOME panel.
+        this._indicator = new WorkspaceIndicator(this);
+        Main.panel.addToStatusArea(this.uuid, this._indicator);
+    }
+
+    disable() {
+        // Clean up by destroying the indicator.
+        if (this._indicator) {
+            this._indicator.destroy();
+            this._indicator = null;
         }
-        
-        disable() {
-            // Clean up by destroying the indicator.
-            if (this._indicator) {
-                this._indicator.destroy();
-                this._indicator = null;
-            }
+
+        // Disconnect settings changes
+        if (this._settingsChangedId) {
+            this._settings.disconnect(this._settingsChangedId);
+            this._settingsChangedId = null;
         }
     }
+
+    _updateConfig() {
+        SVGGenerator.DefaultConfig.grid.visible = this._settings.get_boolean('grid-visible');
+        SVGGenerator.DefaultConfig.grid.color = this._settings.get_string('grid-color');
+        SVGGenerator.DefaultConfig.cell.shape = this._settings.get_string('cell-shape');
+        SVGGenerator.DefaultConfig.cell.size = this._settings.get_int('cell-size');
+        
+        // Trigger indicator update
+        if (this._indicator) {
+            this._indicator._updateWorkspace();
+        }
+    }
+}

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.gsi" path="/org/gnome/shell/extensions/gsi/">
+    <!-- Grid settings -->
+    <key name="grid-visible" type="b">
+      <default>false</default>
+      <summary>Show grid lines</summary>
+      <description>Whether to show grid lines between workspaces</description>
+    </key>
+    <key name="grid-color" type="s">
+      <default>'rgba(255, 255, 255, 1.0)'</default>
+      <summary>Grid color</summary>
+      <description>Color of the grid lines (if visible)</description>
+    </key>
+    
+    <!-- Cell settings -->
+    <key name="cell-shape" type="s">
+      <default>'circle'</default>
+      <summary>Cell shape</summary>
+      <description>Shape of workspace cells (circle or square)</description>
+    </key>
+    <key name="cell-size" type="i">
+      <default>75</default>
+      <summary>Cell size</summary>
+      <description>Size of cells as percentage of available space</description>
+    </key>
+
+    <!-- Theme settings - Inactive state -->
+    <key name="inactive-fill" type="s">
+      <default>'rgba(128, 128, 128, 0.5)'</default>
+      <summary>Inactive cell fill color</summary>
+    </key>
+    <key name="inactive-outline-color" type="s">
+      <default>'rgba(255, 255, 255, 0.5)'</default>
+      <summary>Inactive cell outline color</summary>
+    </key>
+    <key name="inactive-outline-thickness" type="i">
+      <default>0</default>
+      <summary>Inactive cell outline thickness</summary>
+    </key>
+
+    <!-- Theme settings - Active state -->
+    <key name="active-fill" type="s">
+      <default>'rgba(255, 255, 255, 1.0)'</default>
+      <summary>Active cell fill color</summary>
+    </key>
+    <key name="active-outline-color" type="s">
+      <default>'rgba(255, 255, 255, 1.0)'</default>
+      <summary>Active cell outline color</summary>
+    </key>
+    <key name="active-outline-thickness" type="i">
+      <default>0</default>
+      <summary>Active cell outline thickness</summary>
+    </key>
+
+    <!-- Theme settings - Inactive with apps -->
+    <key name="inactive-apps-fill" type="s">
+      <default>'rgba(128, 128, 128, 0.5)'</default>
+      <summary>Inactive cell with apps fill color</summary>
+    </key>
+    <key name="inactive-apps-outline-color" type="s">
+      <default>'rgba(255, 255, 255, 1.0)'</default>
+      <summary>Inactive cell with apps outline color</summary>
+    </key>
+    <key name="inactive-apps-outline-thickness" type="i">
+      <default>1</default>
+      <summary>Inactive cell with apps outline thickness</summary>
+    </key>
+
+    <!-- Theme settings - Active with apps -->
+    <key name="active-apps-fill" type="s">
+      <default>'rgba(255, 255, 255, 1.0)'</default>
+      <summary>Active cell with apps fill color</summary>
+    </key>
+    <key name="active-apps-outline-color" type="s">
+      <default>'rgba(255, 255, 255, 1.0)'</default>
+      <summary>Active cell with apps outline color</summary>
+    </key>
+    <key name="active-apps-outline-thickness" type="i">
+      <default>1</default>
+      <summary>Active cell with apps outline thickness</summary>
+    </key>
+  </schema>
+</schemalist>
