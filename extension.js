@@ -25,7 +25,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { SVGGenerators } from './svgGenerators.js';
 
 // Define the active log level.
-const LOG_LEVEL = 'error';
+const LOG_LEVEL = 'debug';
 
 // Logging utility function.
 function logWithLevel(level, message, error = null) {
@@ -128,7 +128,7 @@ const WorkspaceIndicator = GObject.registerClass(
         
                 // Get workspaces with open apps.
                 let withApps = this._getWorkspacesWithApps()
-                logWithLevel('debug', `Workspaces with active apps: ${withApps}`)
+                logWithLevel('debug', `Workspaces with active apps: ${JSON.stringify(withApps)}`)
                 
                 // Generate the SVG icon for the current workspace.
                 let svgContent = this._getSvgGenerator().call(this, x, y, rows, cols, withApps);
@@ -138,7 +138,6 @@ const WorkspaceIndicator = GObject.registerClass(
                 
                 // Create a BytesIcon directly from the GBytes
                 this._icon.gicon = new Gio.BytesIcon({ bytes: bytes });
-                this._icon.icon_type = St.IconType.SYMBOLIC;
                 
                 logWithLevel('debug', 'Updated workspace icon from memory');
             } catch (error) {
