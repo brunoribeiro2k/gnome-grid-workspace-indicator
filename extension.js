@@ -25,7 +25,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { SVGGenerators } from './svgGenerators.js';
 
 // Define the active log level.
-const LOG_LEVEL = 'debug';
+const LOG_LEVEL = 'error';
 
 // Logging utility function.
 function logWithLevel(level, message, error = null) {
