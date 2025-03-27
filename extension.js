@@ -23,6 +23,7 @@ import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import { SVGGenerator } from './svgGenerator.js';
+import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 // Define the active log level.
 const LOG_LEVEL = 'debug';
@@ -49,6 +50,9 @@ const WorkspaceIndicator = GObject.registerClass(
         _init(extension) {
             super._init(0.0, _('Workspace Indicator'));
             
+            // Store extension reference for settings
+            this._extension = extension;
+            
             // Get panel height for icon sizing
             const panelHeight = Main.panel.height;
             logWithLevel('debug', `Panel height: ${panelHeight}`);
@@ -60,12 +64,36 @@ const WorkspaceIndicator = GObject.registerClass(
                 icon_size: Math.floor(panelHeight * 1) // Make icon slightly smaller than panel
             });
             this.add_child(this._icon);
-            
-            // Connect a click event to toggle the overview.
-            this.connect('button-press-event', () => {
-                Main.overview.toggle();
+
+            // Create popup menu
+            let item = new PopupMenu.PopupMenuItem(_('Settings'));
+            item.connect('activate', () => {
+                this._extension.openPreferences();
             });
-            
+            this.menu.addMenuItem(item);
+
+            // Manage clicks
+            this.connect("button-press-event", (actor, event) => {
+                let button = event.get_button();
+                if (button == Clutter.BUTTON_PRIMARY || button == Clutter.BUTTON_MIDDLE) {
+                    logWithLevel('debug', `Caught click on button ${button}, toggling overview`);
+                    Main.overview.toggle();
+                    return Clutter.EVENT_STOP; // Stop propagation to prevent menu from opening
+                }
+                return Clutter.EVENT_PROPAGATE;
+            });
+
+            // Handle secondary button on release.
+            this.connect("button-release-event", (actor, event) => {
+                let button = event.get_button();
+                if (button == Clutter.BUTTON_SECONDARY) {
+                    logWithLevel('debug', `Right-click released, toggling menu`);
+                    this.menu.toggle();
+                    return Clutter.EVENT_STOP;
+                }
+                return Clutter.EVENT_PROPAGATE;
+            });
+
             // Connect a scroll event to iterate through workspaces.
             this.connect('scroll-event', (actor, event) => {
                 let direction = event.get_scroll_direction();
