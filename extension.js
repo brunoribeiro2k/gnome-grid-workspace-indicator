@@ -72,28 +72,6 @@ const WorkspaceIndicator = GObject.registerClass(
             });
             this.menu.addMenuItem(item);
 
-            // Manage clicks
-            this.connect("button-press-event", (actor, event) => {
-                let button = event.get_button();
-                if (button == Clutter.BUTTON_PRIMARY || button == Clutter.BUTTON_MIDDLE) {
-                    logWithLevel('debug', `Caught click on button ${button}, toggling overview`);
-                    Main.overview.toggle();
-                    return Clutter.EVENT_STOP; // Stop propagation to prevent menu from opening
-                }
-                return Clutter.EVENT_PROPAGATE;
-            });
-
-            // Handle secondary button on release.
-            this.connect("button-release-event", (actor, event) => {
-                let button = event.get_button();
-                if (button == Clutter.BUTTON_SECONDARY) {
-                    logWithLevel('debug', `Right-click released, toggling menu`);
-                    this.menu.toggle();
-                    return Clutter.EVENT_STOP;
-                }
-                return Clutter.EVENT_PROPAGATE;
-            });
-
             // Connect a scroll event to iterate through workspaces.
             this.connect('scroll-event', (actor, event) => {
                 let direction = event.get_scroll_direction();
