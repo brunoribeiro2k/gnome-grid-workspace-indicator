@@ -26,53 +26,62 @@ import { SVGGenerator } from './svgGenerator.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 // Define the active log level.
-const LOG_LEVEL = 'debug';
+let LOG_LEVEL = 'error';
 
-// Logging utility function.
+// Production-level logging utility.
 function logWithLevel(level, message, error = null) {
     const levels = ['debug', 'info', 'error'];
-    const currentLevelIndex = levels.indexOf(LOG_LEVEL);
-    const messageLevelIndex = levels.indexOf(level);
-    
-    // Only log messages that are at or above the active log level.
-    if (messageLevelIndex >= currentLevelIndex) {
-        if (level === 'error' && error) {
-            logError(error, message);
-        } else {
-            log(`[${level.toUpperCase()}] ${message}`);
-        }
+    if (levels.indexOf(level) >= levels.indexOf(LOG_LEVEL)) {
+        level === 'error' && error ? logError(error, message) : log(`[${level.toUpperCase()}] ${message}`);
     }
 }
 
 const WorkspaceIndicator = GObject.registerClass(
     class WorkspaceIndicator extends PanelMenu.Button {
-        
         _init(extension) {
             super._init(0.0, _('Workspace Indicator'));
-            
-            // Store extension reference for settings
             this._extension = extension;
-            
-            // Get panel height for icon sizing
+            this._initWidgets();
+            this._initSignals();
+            this._updateWorkspace();
+        }
+        
+        _initWidgets() {
+            // Setting up the icon.
             const panelHeight = Main.panel.height;
             logWithLevel('debug', `Panel height: ${panelHeight}`);
-            
-            // Create an icon to display the workspace indicator.
             this._icon = new St.Icon({
                 gicon: null,
                 style_class: 'workspace-indicator-icon',
-                icon_size: Math.floor(panelHeight * 1) // Make icon slightly smaller than panel
+                icon_size: Math.floor(panelHeight)
             });
             this.add_child(this._icon);
-
-            // Create popup menu
+            
+            // Adding popup menu for settings.
             let item = new PopupMenu.PopupMenuItem(_('Settings'));
-            item.connect('activate', () => {
-                this._extension.openPreferences();
-            });
+            item.connect('activate', () => this._extension.openPreferences());
             this.menu.addMenuItem(item);
-
-            // Connect a scroll event to iterate through workspaces.
+        }
+        
+        _initSignals() {
+            // Connect signals and bind to this.
+            this._activeWsSignalId = global.workspace_manager.connect('active-workspace-changed', this._updateWorkspace.bind(this));
+            this._windowCreatedId = global.display.connect('window-created', this._updateWorkspace.bind(this));
+            this._wsAddedId = global.workspace_manager.connect('workspace-added', () => {
+                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
+                    this._connectWindowSignals();
+                    this._updateWorkspace();
+                    return GLib.SOURCE_REMOVE;
+                });
+            });
+            this._wsRemovedId = global.workspace_manager.connect('workspace-removed', () => {
+                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
+                    this._connectWindowSignals();
+                    this._updateWorkspace();
+                    return GLib.SOURCE_REMOVE;
+                });
+            });
+            // Scroll event for switching workspaces.
             this.connect('scroll-event', (actor, event) => {
                 let direction = event.get_scroll_direction();
                 if (direction === Clutter.ScrollDirection.UP) {
@@ -81,98 +90,46 @@ const WorkspaceIndicator = GObject.registerClass(
                     this._switchWorkspace(1);
                 }
             });
-            
-            // Connect to the signal that fires when the active workspace changes.
-            this._activeWsSignalId = global.workspace_manager.connect('active-workspace-changed', () => {
-                this._updateWorkspace();
-            });
-
-            // Connect to window creation
-            this._windowCreatedId = global.display.connect('window-created', () => {
-                this._updateWorkspace();
-            });
-
-            // Connect to window signals for each workspace
+            // Connect window signals.
             this._windowSignals = [];
             this._connectWindowSignals();
-
-            // Connect to workspace number changes to update window signals
-            this._wsAddedId = global.workspace_manager.connect('workspace-added', () => {
-                // Add small delay to ensure layout is updated
-                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
-                    this._connectWindowSignals();
-                    this._updateWorkspace();
-                    return GLib.SOURCE_REMOVE;
-                });
-            });
-            this._wsRemovedId = global.workspace_manager.connect('workspace-removed', () => {
-                // Add small delay to ensure layout is updated
-                GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
-                    this._connectWindowSignals();
-                    this._updateWorkspace();
-                    return GLib.SOURCE_REMOVE;
-                });
-            });
-            
-            // Update the indicator immediately.
-            this._updateWorkspace();
         }
         
         _getWorkspaceCoordinates(idx, columns) {
-            let x = idx % columns;
-            let y = Math.floor(idx / columns);
-            return [x, y];
+            return [idx % columns, Math.floor(idx / columns)];
         }
         
         _getWorkspaceDimensions() {
-            let workspaceManager = global.workspace_manager;
-            let rows = workspaceManager.get_layout_rows();
-            let columns = workspaceManager.get_layout_columns();
-            return [rows, columns];
+            let wm = global.workspace_manager;
+            return [wm.get_layout_rows(), wm.get_layout_columns()];
         }
         
         _getWorkspacesWithApps() {
-            let workspacesWithApps = [];
-            let numWorkspaces = global.workspace_manager.get_n_workspaces();
-            let [rows, cols] = this._getWorkspaceDimensions();
-        
-            for (let i = 0; i < numWorkspaces; i++) {
+            let withApps = [];
+            let total = global.workspace_manager.get_n_workspaces();
+            const [rows, cols] = this._getWorkspaceDimensions();
+            for (let i = 0; i < total; i++) {
                 let workspace = global.workspace_manager.get_workspace_by_index(i);
                 if (workspace.list_windows().length > 0) {
-                    // Convert the workspace index to coordinates.
                     let [x, y] = this._getWorkspaceCoordinates(i, cols);
-                    workspacesWithApps.push([x, y]);
+                    withApps.push([x, y]);
                 }
             }
-            return workspacesWithApps;
+            return withApps;
         }
-
+        
         _updateWorkspace() {
             try {
-                // Get the current active workspace index (0-based).
                 let activeIndex = global.workspace_manager.get_active_workspace_index();
                 logWithLevel('debug', `Active workspace index: ${activeIndex}`);
-                
-                // Get the workspace dimensions.
-                let [rows, cols] = this._getWorkspaceDimensions();
-                
-                // Get the workspace coordinates.
+                const [rows, cols] = this._getWorkspaceDimensions();
                 let [x, y] = this._getWorkspaceCoordinates(activeIndex, cols);
                 logWithLevel('debug', `Workspace coordinates: (${x}, ${y})`);
-        
-                // Get workspaces with open apps.
-                let withApps = this._getWorkspacesWithApps()
-                logWithLevel('debug', `Workspaces with active apps: ${JSON.stringify(withApps)}`)
-                
-                // Generate the SVG icon for the current workspace.
+                let withApps = this._getWorkspacesWithApps();
+                logWithLevel('debug', `Workspaces with active apps: ${JSON.stringify(withApps)}`);
                 let svgContent = SVGGenerator.create(x, y, rows, cols, withApps, this._icon.icon_size);
-                
-                // Create a GBytes object from the SVG content
                 let bytes = GLib.Bytes.new(new TextEncoder().encode(svgContent));
-                
-                // Create a BytesIcon directly from the GBytes
-                this._icon.gicon = new Gio.BytesIcon({ bytes: bytes });
-                
+                this._icon.gicon = new Gio.BytesIcon({ bytes });
                 logWithLevel('debug', `Updated workspace icon from memory`);
             } catch (error) {
                 logWithLevel('error', 'Failed to update workspace indicator', error);
@@ -180,51 +137,40 @@ const WorkspaceIndicator = GObject.registerClass(
         }
         
         _switchWorkspace(offset) {
-            let workspaceManager = global.workspace_manager;
-            let activeIndex = workspaceManager.get_active_workspace_index();
-            let numWorkspaces = workspaceManager.get_n_workspaces();
-            
-            // Calculate the new workspace index without wrapping.
+            let wm = global.workspace_manager;
+            let activeIndex = wm.get_active_workspace_index();
             let newIndex = activeIndex + offset;
-            
-            // Ensure the new index is within valid bounds.
-            if (newIndex < 0 || newIndex >= numWorkspaces) {
+            if (newIndex < 0 || newIndex >= wm.get_n_workspaces()) {
                 logWithLevel('debug', `Cannot switch to workspace ${newIndex}: Out of bounds`);
                 return;
             }
-            
-            // Activate the new workspace.
-            let newWorkspace = workspaceManager.get_workspace_by_index(newIndex);
+            let newWorkspace = wm.get_workspace_by_index(newIndex);
             if (newWorkspace) {
                 newWorkspace.activate(global.get_current_time());
                 logWithLevel('debug', `Switched to workspace ${newIndex}`);
             }
         }
-
+        
         _connectWindowSignals() {
-            // Disconnect existing signals
+            // Disconnect previous window signals.
             this._disconnectWindowSignals();
-            
-            // Connect to window-removed signal for each workspace
-            let numWorkspaces = global.workspace_manager.get_n_workspaces();
-            for (let i = 0; i < numWorkspaces; i++) {
+            let total = global.workspace_manager.get_n_workspaces();
+            for (let i = 0; i < total; i++) {
                 let workspace = global.workspace_manager.get_workspace_by_index(i);
-                let signalId = workspace.connect('window-removed', () => {
-                    this._updateWorkspace();
-                });
+                let signalId = workspace.connect('window-removed', this._updateWorkspace.bind(this));
                 this._windowSignals.push([workspace, signalId]);
             }
         }
-
+        
         _disconnectWindowSignals() {
-            for (let [workspace, signalId] of this._windowSignals) {
+            this._windowSignals.forEach(([workspace, signalId]) => {
                 workspace.disconnect(signalId);
-            }
+            });
             this._windowSignals = [];
         }
         
         destroy() {
-            // Disconnect the workspace signal when the indicator is destroyed.
+            // Disconnect all signals.
             if (this._activeWsSignalId) {
                 global.workspace_manager.disconnect(this._activeWsSignalId);
                 this._activeWsSignalId = null;
@@ -241,10 +187,7 @@ const WorkspaceIndicator = GObject.registerClass(
                 global.workspace_manager.disconnect(this._wsRemovedId);
                 this._wsRemovedId = null;
             }
-            
-            // Disconnect window signals
             this._disconnectWindowSignals();
-            
             super.destroy();
         }
     });
@@ -252,50 +195,40 @@ const WorkspaceIndicator = GObject.registerClass(
 export default class IndicatorExampleExtension extends Extension {
     constructor(metadata) {
         super(metadata);
-        // Pass the schema ID to getSettings
+        // Retrieve settings using schema
         this._settings = this.getSettings();
     }
-
+    
     enable() {
-        // Update SVGGenerator config from settings
-        SVGGenerator.DefaultConfig.grid.visible = this._settings.get_boolean('grid-visible');
-        SVGGenerator.DefaultConfig.grid.color = this._settings.get_string('grid-color');
-        SVGGenerator.DefaultConfig.cell.shape = this._settings.get_string('cell-shape');
-        SVGGenerator.DefaultConfig.cell.size = this._settings.get_int('cell-size');
-
-        // Connect to settings changes
-        this._settingsChangedId = this._settings.connect('changed', () => {
-            this._updateConfig();
-        });
-
-        // Instantiate and add the indicator to the GNOME panel.
+        this._updateSVGConfig();
+        this._settingsChangedId = this._settings.connect('changed', this._updateConfig.bind(this));
         this._indicator = new WorkspaceIndicator(this);
         Main.panel.addToStatusArea(this.uuid, this._indicator);
     }
-
+    
     disable() {
-        // Clean up by destroying the indicator.
         if (this._indicator) {
             this._indicator.destroy();
             this._indicator = null;
         }
-
-        // Disconnect settings changes
         if (this._settingsChangedId) {
             this._settings.disconnect(this._settingsChangedId);
             this._settingsChangedId = null;
         }
     }
-
+    
     _updateConfig() {
-        SVGGenerator.DefaultConfig.grid.visible = this._settings.get_boolean('grid-visible');
-        SVGGenerator.DefaultConfig.grid.color = this._settings.get_string('grid-color');
-        SVGGenerator.DefaultConfig.cell.shape = this._settings.get_string('cell-shape');
-        SVGGenerator.DefaultConfig.cell.size = this._settings.get_int('cell-size');
-        
-        // Trigger indicator update
+        LOG_LEVEL = this._settings.get_boolean('log-debug') ? 'debug' : 'error';
+        this._updateSVGConfig();
         if (this._indicator) {
             this._indicator._updateWorkspace();
         }
+    }
+    
+    _updateSVGConfig() {
+        SVGGenerator.Config.grid.visible = this._settings.get_boolean('grid-visible');
+        SVGGenerator.Config.grid.color = this._settings.get_string('grid-color');
+        SVGGenerator.Config.cell.shape = this._settings.get_string('cell-shape');
+        SVGGenerator.Config.cell.size = this._settings.get_int('cell-size');
     }
 }

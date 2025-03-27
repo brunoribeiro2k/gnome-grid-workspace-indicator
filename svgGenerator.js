@@ -1,7 +1,7 @@
 export class SVGGenerator {
     static SVG_SIZE = 16; // Default size if not specified
 
-    static DefaultConfig = {
+    static Config = {
         grid: {
             color: 'rgba(255, 255, 255, 1.0)',
             thickness: 1,
@@ -155,10 +155,10 @@ export class SVGGenerator {
         const cellWidth = this.SVG_SIZE / cols;
         const cellHeight = this.SVG_SIZE / rows;
 
-        let svg = this._createSvgLayout(this._generateStyles(this.DefaultConfig));
+        let svg = this._createSvgLayout(this._generateStyles(this.Config));
         
-        if (this.DefaultConfig.grid.visible) {
-            svg += this._createGridLines(rows, cols, this.DefaultConfig.grid.color);
+        if (this.Config.grid.visible) {
+            svg += this._createGridLines(rows, cols, this.Config.grid.color);
         }
 
         // Generate cells
@@ -167,7 +167,7 @@ export class SVGGenerator {
                 const isActive = (col === x && row === y);
                 const hasApps = withApps.some(([appX, appY]) => appX === col && appY === row);
                 const cellClass = this._getCellClass(col, row, isActive, hasApps);
-                svg += this._createCell(col, row, cellWidth, cellHeight, cellClass, this.DefaultConfig) + '\n';
+                svg += this._createCell(col, row, cellWidth, cellHeight, cellClass, this.Config) + '\n';
             }
         }
 

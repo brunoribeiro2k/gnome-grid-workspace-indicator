@@ -80,5 +80,12 @@
       <default>1</default>
       <summary>Active cell with apps outline thickness</summary>
     </key>
+
+    <!-- New logging setting -->
+    <key name="log-debug" type="b">
+      <default>false</default>
+      <summary>Enable Debug Logging</summary>
+      <description>Enable debug level logs.</description>
+    </key>
   </schema>
 </schemalist>

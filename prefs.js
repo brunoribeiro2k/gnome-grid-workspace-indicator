@@ -90,6 +90,25 @@ export default class GridWorkspacePreferences extends ExtensionPreferences {
             settings.set_int('cell-size', widget.get_value());
         });
 
+        // New logging settings group
+        const logGroup = new Adw.PreferencesGroup({
+            title: 'Logging Settings',
+            description: 'Set the log level (Debug if enabled, Error if disabled)'
+        });
+        const logRow = new Adw.ActionRow({
+            title: 'Debug Logging',
+            subtitle: 'Enable debug logging (if disabled, error logging)'
+        });
+        const logSwitch = new Gtk.Switch({
+            active: settings.get_boolean('log-debug'),
+            valign: Gtk.Align.CENTER
+        });
+        logRow.add_suffix(logSwitch);
+        logSwitch.connect('notify::active', (widget) => {
+            settings.set_boolean('log-debug', widget.get_active());
+        });
+        logGroup.add(logRow);
+
         // Add rows to groups
         gridGroup.add(gridVisibleRow);
         gridGroup.add(gridColorRow);
@@ -99,6 +118,7 @@ export default class GridWorkspacePreferences extends ExtensionPreferences {
         // Add groups to page
         page.add(gridGroup);
         page.add(cellGroup);
+        page.add(logGroup);
 
         // Add page to window
         window.add(page);
