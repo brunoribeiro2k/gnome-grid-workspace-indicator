@@ -8,7 +8,7 @@
       <description>Whether to show grid lines between workspaces</description>
     </key>
     <key name="grid-color" type="s">
-      <default>'rgba(255, 255, 255, 1.0)'</default>
+      <default>'rgba(255, 255, 255, 1)'</default>
       <summary>Grid color</summary>
       <description>Color of the grid lines (if visible)</description>
     </key>
@@ -20,65 +20,31 @@
       <description>Shape of workspace cells (circle or square)</description>
     </key>
     <key name="cell-size" type="i">
-      <default>75</default>
+      <default>65</default>
       <summary>Cell size</summary>
       <description>Size of cells as percentage of available space</description>
     </key>
 
-    <!-- Theme settings - Inactive state -->
+    <!-- Theme settings - Base states -->
     <key name="inactive-fill" type="s">
       <default>'rgba(128, 128, 128, 0.5)'</default>
       <summary>Inactive cell fill color</summary>
     </key>
-    <key name="inactive-outline-color" type="s">
-      <default>'rgba(255, 255, 255, 0.5)'</default>
-      <summary>Inactive cell outline color</summary>
-    </key>
-    <key name="inactive-outline-thickness" type="i">
-      <default>0</default>
-      <summary>Inactive cell outline thickness</summary>
-    </key>
-
-    <!-- Theme settings - Active state -->
     <key name="active-fill" type="s">
-      <default>'rgba(255, 255, 255, 1.0)'</default>
+      <default>'rgba(255, 255, 255, 1)'</default>
       <summary>Active cell fill color</summary>
     </key>
-    <key name="active-outline-color" type="s">
-      <default>'rgba(255, 255, 255, 1.0)'</default>
-      <summary>Active cell outline color</summary>
-    </key>
-    <key name="active-outline-thickness" type="i">
-      <default>0</default>
-      <summary>Active cell outline thickness</summary>
-    </key>
 
-    <!-- Theme settings - Inactive with apps -->
-    <key name="inactive-apps-fill" type="s">
-      <default>'rgba(128, 128, 128, 0.5)'</default>
-      <summary>Inactive cell with apps fill color</summary>
+    <!-- New cumulative withApps outline settings -->
+    <key name="apps-outline-color" type="s">
+      <default>'rgba(255, 255, 255, 1)'</default>
+      <summary>Apps outline color</summary>
+      <description>Outline color applied to cells with apps.</description>
     </key>
-    <key name="inactive-apps-outline-color" type="s">
-      <default>'rgba(255, 255, 255, 1.0)'</default>
-      <summary>Inactive cell with apps outline color</summary>
-    </key>
-    <key name="inactive-apps-outline-thickness" type="i">
-      <default>1</default>
-      <summary>Inactive cell with apps outline thickness</summary>
-    </key>
-
-    <!-- Theme settings - Active with apps -->
-    <key name="active-apps-fill" type="s">
-      <default>'rgba(255, 255, 255, 1.0)'</default>
-      <summary>Active cell with apps fill color</summary>
-    </key>
-    <key name="active-apps-outline-color" type="s">
-      <default>'rgba(255, 255, 255, 1.0)'</default>
-      <summary>Active cell with apps outline color</summary>
-    </key>
-    <key name="active-apps-outline-thickness" type="i">
-      <default>1</default>
-      <summary>Active cell with apps outline thickness</summary>
+    <key name="apps-outline-thickness" type="d">
+      <default>1.0</default>
+      <summary>Apps outline thickness</summary>
+      <description>Outline thickness applied to cells with apps (0=none, 1.5=medium, 3=thick). Continuous values are supported.</description>
     </key>
 
     <!-- New logging setting -->

@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <requires lib="adw" version="1.0"/>
+  <!-- Using Adwaita and GTK widgets, adjust as needed -->
+  <object class="AdwPreferencesPage" id="main_widget">
+    <property name="margin-start">12</property>
+    <property name="margin-end">12</property>
+    <property name="margin-top">12</property>
+    <property name="margin-bottom">12</property>
+    <child>
+      <object class="GtkBox" id="preferences_box">
+        <property name="orientation">vertical</property>
+        <property name="spacing">12</property>
+        <child>
+          <object class="AdwPreferencesGroup" id="grid_settings_group">
+            <property name="title">Grid</property>
+            <child>
+              <object class="AdwActionRow" id="row_grid">
+                <property name="title">Grid</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="spacing">12</property>
+                    <property name="valign">center</property>
+                    <child>
+                      <object class="GtkSwitch" id="grid_visible_switch">
+                        <property name="valign">center</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkColorButton" id="grid_color_button">
+                        <property name="valign">center</property>
+                        <property name="width-request">32</property>
+                        <property name="use-alpha">true</property>
+                        <property name="show-editor">true</property>
+                        <property name="title">Grid Color</property>
+                        <style>
+                          <class name="color-button"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwActionRow" id="row_cells">
+                <property name="title">Cells</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="spacing">12</property>
+                    <property name="valign">center</property>
+                    <child>
+                      <object class="GtkScale" id="cell_size_scale">
+                        <property name="orientation">horizontal</property>
+                        <property name="width-request">150</property>
+                        <property name="valign">center</property>
+                        <property name="digits">0</property>
+                        <property name="draw-value">true</property>
+                        <property name="value-pos">right</property>
+                        <property name="adjustment">
+                          <object class="GtkAdjustment">
+                            <property name="lower">50</property>
+                            <property name="upper">100</property>
+                            <property name="value">65</property>
+                            <property name="step-increment">1</property>
+                            <property name="page-increment">5</property>
+                          </object>
+                        </property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkDropDown" id="cell_shape_dropdown">
+                        <property name="valign">center</property>
+                        <property name="model">
+                          <object class="GtkStringList">
+                            <items>
+                              <item>Circle</item>
+                              <item>Square</item>
+                            </items>
+                          </object>
+                        </property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwPreferencesGroup" id="workspaces_group">
+            <property name="title">Workspaces</property>
+            <child>
+              <object class="AdwActionRow" id="row_active_fill">
+                <property name="title">Active workspace</property>
+                <child>
+                  <object class="GtkColorButton" id="active_fill_button">
+                    <property name="valign">center</property>
+                    <property name="width-request">32</property>
+                    <property name="use-alpha">true</property>
+                    <property name="show-editor">true</property>
+                    <property name="title">Active Fill Color</property>
+                    <style>
+                      <class name="color-button"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwActionRow" id="row_inactive_fill">
+                <property name="title">Other workspaces</property>
+                <child>
+                  <object class="GtkColorButton" id="inactive_fill_button">
+                    <property name="valign">center</property>
+                    <property name="width-request">32</property>
+                    <property name="use-alpha">true</property>
+                    <property name="show-editor">true</property>
+                    <property name="title">Inactive Fill Color</property>
+                    <style>
+                      <class name="color-button"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwActionRow" id="row_outline">
+                <property name="title">Outline</property>
+                <property name="subtitle">For workspaces with open apps</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="spacing">12</property>
+                    <property name="valign">center</property>
+                    <child>
+                      <object class="GtkScale" id="outline_thickness_scale">
+                        <property name="orientation">horizontal</property>
+                        <property name="width-request">150</property>
+                        <property name="valign">center</property>
+                        <property name="digits">1</property>
+                        <property name="draw-value">true</property>
+                        <property name="value-pos">right</property>
+                        <property name="adjustment">
+                          <object class="GtkAdjustment">
+                            <property name="lower">0</property>
+                            <property name="upper">3</property>
+                            <property name="value">1</property>
+                            <property name="step-increment">0.1</property>
+                            <property name="page-increment">0.5</property>
+                          </object>
+                        </property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkColorButton" id="outline_color_button">
+                        <property name="valign">center</property>
+                        <property name="width-request">32</property>
+                        <property name="use-alpha">true</property>
+                        <property name="show-editor">true</property>
+                        <property name="title">Outline Color</property>
+                        <style>
+                          <class name="color-button"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwPreferencesGroup" id="logging_group">
+            <property name="title">Logging</property>
+            <child>
+              <object class="AdwActionRow" id="row_debug_logging">
+                <property name="title">Debug</property>
+                <child>
+                  <object class="GtkSwitch" id="debug_logging_switch">
+                    <property name="valign">center</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="reset_button">
+            <property name="label">Reset All Settings</property>
+            <property name="margin-top">12</property>
+            <style>
+              <class name="destructive-action"/>
+            </style>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

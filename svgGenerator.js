@@ -13,42 +13,24 @@ export class SVGGenerator {
         },
         states: {
             inactive: {
-                fill: 'rgba(128, 128, 128, 0.5)',
-                outline: {
-                    color: 'rgba(255, 255, 255, 0.5)',
-                    thickness: 0
-                }
+                fill: 'rgba(128, 128, 128, 0.5)'
             },
             active: {
-                fill: 'rgba(255, 255, 255, 1)',
-                outline: {
-                    color: 'rgba(255, 255, 255, 1)',
-                    thickness: 0
-                }
+                fill: 'rgba(255, 255, 255, 1)'
             },
-            inactiveWithApps: {
-                fill: null,
+            withApps: {
                 outline: {
                     color: 'rgba(255, 255, 255, 1)',
                     thickness: 1
                 }
-            },
-            activeWithApps: {
-                fill: null,
-                outline: {
-                    color: 'rgba(255, 255, 255, 1)',
-                    thickness: 1
-                }
-            }   
+            }
         }
     };
 
-    // Define all possible cell states
+    // Define base cell classes
     static CellClass = {
         INACTIVE: 'workspace-inactive',
-        INACTIVE_WITH_APPS: 'workspace-inactive-with-apps',
-        ACTIVE: 'workspace-active',
-        ACTIVE_WITH_APPS: 'workspace-active-with-apps'
+        ACTIVE: 'workspace-active'
     };
 
     static _generateStyles(config) {
@@ -59,35 +41,22 @@ export class SVGGenerator {
             return { fill, outlineColor, outlineThickness };
         };
 
-        const inactive = getStateStyle(config.states.inactive);
-        const active = getStateStyle(config.states.active);
-        const inactiveWithApps = getStateStyle(config.states.inactiveWithApps, config.states.inactive);
-        const activeWithApps = getStateStyle(config.states.activeWithApps, config.states.active);
-
         return `
         .grid-line {
             stroke: ${config.grid.color};
             stroke-width: ${config.grid.thickness};
         }
         .${this.CellClass.INACTIVE} {
-            fill: ${inactive.fill};
-            stroke: ${inactive.outlineColor};
-            stroke-width: ${inactive.outlineThickness};
+            fill: ${config.states.inactive.fill};
+            stroke: none;
         }
         .${this.CellClass.ACTIVE} {
-            fill: ${active.fill};
-            stroke: ${active.outlineColor};
-            stroke-width: ${active.outlineThickness};
+            fill: ${config.states.active.fill};
+            stroke: none;
         }
-        .${this.CellClass.INACTIVE_WITH_APPS} {
-            fill: ${inactiveWithApps.fill};
-            stroke: ${inactiveWithApps.outlineColor};
-            stroke-width: ${inactiveWithApps.outlineThickness};
-        }
-        .${this.CellClass.ACTIVE_WITH_APPS} {
-            fill: ${activeWithApps.fill};
-            stroke: ${activeWithApps.outlineColor};
-            stroke-width: ${activeWithApps.outlineThickness};
+        .with-apps {
+            stroke: ${config.states.withApps.outline.color};
+            stroke-width: ${config.states.withApps.outline.thickness};
         }`;
     }
 
@@ -143,10 +112,8 @@ export class SVGGenerator {
     }
 
     static _getCellClass(col, row, isActive, hasApps) {
-        if (isActive && hasApps) return this.CellClass.ACTIVE_WITH_APPS;
-        if (isActive) return this.CellClass.ACTIVE;
-        if (hasApps) return this.CellClass.INACTIVE_WITH_APPS;
-        return this.CellClass.INACTIVE;
+        const baseClass = isActive ? this.CellClass.ACTIVE : this.CellClass.INACTIVE;
+        return hasApps ? `${baseClass} with-apps` : baseClass;
     }
 
     // Main generator function

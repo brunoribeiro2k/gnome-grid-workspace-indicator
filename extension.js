@@ -230,5 +230,11 @@ export default class IndicatorExampleExtension extends Extension {
         SVGGenerator.Config.grid.color = this._settings.get_string('grid-color');
         SVGGenerator.Config.cell.shape = this._settings.get_string('cell-shape');
         SVGGenerator.Config.cell.size = this._settings.get_int('cell-size');
+        
+        // Update theme settings for new config structure
+        SVGGenerator.Config.states.inactive.fill = this._settings.get_string('inactive-fill');
+        SVGGenerator.Config.states.active.fill = this._settings.get_string('active-fill');
+        SVGGenerator.Config.states.withApps.outline.color = this._settings.get_string('apps-outline-color');
+        SVGGenerator.Config.states.withApps.outline.thickness = this._settings.get_double('apps-outline-thickness');
     }
 }

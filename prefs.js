@@ -1,126 +1,122 @@
-import Adw from 'gi://Adw';
 import Gdk from 'gi://Gdk';
+import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
-import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
+import Gio from 'gi://Gio';
+import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
+
+// Get the extension directory based on the ES module URL.
+function getExtensionDir() {
+    let uri = import.meta.url;
+    let path = uri.startsWith("file://") ? uri.slice("file://".length) : uri;
+    return GLib.path_get_dirname(path);
+}
 
 export default class GridWorkspacePreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
+        let extensionDir = getExtensionDir();
+        let uiFile = extensionDir + '/settings.ui';
+        log('Loading UI file from: ' + uiFile);
+
+        let builder;
+        try {
+            builder = Gtk.Builder.new_from_file(uiFile);
+        } catch (e) {
+            log('Error creating Gtk.Builder: ' + e);
+            return;
+        }
+        let mainWidget = builder.get_object('main_widget');
+        if (!mainWidget) {
+            log('Error: Could not find main_widget in the UI file');
+            return;
+        }
+        window.add(mainWidget);
+        log('Preferences UI loaded successfully.');
+
         // Get settings
         const settings = this.getSettings();
+
+        // Grid Settings
+        this._bindSwitch(builder, settings, 'grid-visible', 'grid_visible_switch');
+        this._bindColorButton(builder, settings, 'grid-color', 'grid_color_button');
         
-        // Create a preferences page
-        const page = new Adw.PreferencesPage();
+        // Cell Settings
+        const cellShapeDropdown = builder.get_object('cell_shape_dropdown');
+        settings.bind(
+            'cell-shape',
+            cellShapeDropdown,
+            'selected',
+            Gio.SettingsBindFlags.DEFAULT
+        );
+
+        const cellSizeScale = builder.get_object('cell_size_scale');
+        settings.bind(
+            'cell-size',
+            cellSizeScale.get_adjustment(),
+            'value',
+            Gio.SettingsBindFlags.DEFAULT
+        );
+
+        // Theme Settings
+        this._bindColorButton(builder, settings, 'inactive-fill', 'inactive_fill_button');
+        this._bindColorButton(builder, settings, 'active-fill', 'active_fill_button');
+
+        // Apps Outline Settings
+        this._bindColorButton(builder, settings, 'apps-outline-color', 'outline_color_button');
         
-        // Grid settings group
-        const gridGroup = new Adw.PreferencesGroup({
-            title: 'Grid Settings',
-            description: 'Configure the appearance of the grid'
-        });
+        const outlineScale = builder.get_object('outline_thickness_scale');
+        settings.bind(
+            'apps-outline-thickness',
+            outlineScale.get_adjustment(),
+            'value',
+            Gio.SettingsBindFlags.DEFAULT
+        );
 
-        // Grid visibility switch
-        const gridVisibleRow = new Adw.ActionRow({
-            title: 'Show Grid Lines',
-            subtitle: 'Display lines between workspaces'
+        // Debug Logging
+        this._bindSwitch(builder, settings, 'log-debug', 'debug_logging_switch');
+
+        // Reset button
+        const resetButton = builder.get_object('reset_button');
+        resetButton.connect('clicked', () => {
+            settings.reset('grid-visible');
+            settings.reset('grid-color');
+            settings.reset('cell-shape');
+            settings.reset('cell-size');
+            settings.reset('inactive-fill');
+            settings.reset('active-fill');
+            settings.reset('apps-outline-color');
+            settings.reset('apps-outline-thickness');
+            settings.reset('log-debug');
         });
-        const gridVisibleSwitch = new Gtk.Switch({
-            active: settings.get_boolean('grid-visible'),
-            valign: Gtk.Align.CENTER,
-        });
-        gridVisibleRow.add_suffix(gridVisibleSwitch);
-        gridVisibleSwitch.connect('notify::active', (widget) => {
-            settings.set_boolean('grid-visible', widget.get_active());
-        });
+    }
+
+    _bindSwitch(builder, settings, key, switchId) {
+        settings.bind(
+            key,
+            builder.get_object(switchId),
+            'active',
+            Gio.SettingsBindFlags.DEFAULT
+        );
+    }
+
+    _bindColorButton(builder, settings, key, buttonId) {
+        const button = builder.get_object(buttonId);
         
-        // Grid color button
-        const gridColorRow = new Adw.ActionRow({
-            title: 'Grid Color',
-            subtitle: 'Choose the color of grid lines'
-        });
-        const gridColorButton = new Gtk.ColorButton({
-            valign: Gtk.Align.CENTER,
-            rgba: new Gdk.RGBA()
-        });
-        gridColorButton.get_rgba().parse(settings.get_string('grid-color'));
-        gridColorRow.add_suffix(gridColorButton);
-        gridColorButton.connect('color-set', (widget) => {
-            const rgba = widget.get_rgba();
-            settings.set_string('grid-color', rgba.to_string());
+        // Set initial color
+        const rgba = new Gdk.RGBA();
+        rgba.parse(settings.get_string(key));
+        button.set_rgba(rgba);
+
+        // Connect to color changes
+        button.connect('color-set', () => {
+            const color = button.get_rgba().to_string();
+            settings.set_string(key, color);
         });
 
-        // Cell settings group
-        const cellGroup = new Adw.PreferencesGroup({
-            title: 'Cell Settings',
-            description: 'Configure the appearance of workspace cells'
+        // Watch for settings changes
+        settings.connect(`changed::${key}`, () => {
+            const newRgba = new Gdk.RGBA();
+            newRgba.parse(settings.get_string(key));
+            button.set_rgba(newRgba);
         });
-
-        // Cell shape dropdown
-        const cellShapeRow = new Adw.ComboRow({
-            title: 'Cell Shape',
-            subtitle: 'Choose the shape of workspace cells',
-            model: new Gtk.StringList({
-                strings: ['circle', 'square']
-            }),
-            selected: settings.get_string('cell-shape') === 'circle' ? 0 : 1
-        });
-        cellShapeRow.connect('notify::selected', (widget) => {
-            const shapes = ['circle', 'square'];
-            settings.set_string('cell-shape', shapes[widget.selected]);
-        });
-
-        // Cell size scale
-        const cellSizeRow = new Adw.ActionRow({
-            title: 'Cell Size',
-            subtitle: 'Size of cells as percentage of available space'
-        });
-        const cellSizeScale = new Gtk.Scale({
-            orientation: Gtk.Orientation.HORIZONTAL,
-            adjustment: new Gtk.Adjustment({
-                lower: 10,
-                upper: 100,
-                step_increment: 5,
-                value: settings.get_int('cell-size')
-            }),
-            width_request: 200,
-            value_pos: Gtk.PositionType.RIGHT,
-            digits: 0,
-            valign: Gtk.Align.CENTER
-        });
-        cellSizeRow.add_suffix(cellSizeScale);
-        cellSizeScale.connect('value-changed', (widget) => {
-            settings.set_int('cell-size', widget.get_value());
-        });
-
-        // New logging settings group
-        const logGroup = new Adw.PreferencesGroup({
-            title: 'Logging Settings',
-            description: 'Set the log level (Debug if enabled, Error if disabled)'
-        });
-        const logRow = new Adw.ActionRow({
-            title: 'Debug Logging',
-            subtitle: 'Enable debug logging (if disabled, error logging)'
-        });
-        const logSwitch = new Gtk.Switch({
-            active: settings.get_boolean('log-debug'),
-            valign: Gtk.Align.CENTER
-        });
-        logRow.add_suffix(logSwitch);
-        logSwitch.connect('notify::active', (widget) => {
-            settings.set_boolean('log-debug', widget.get_active());
-        });
-        logGroup.add(logRow);
-
-        // Add rows to groups
-        gridGroup.add(gridVisibleRow);
-        gridGroup.add(gridColorRow);
-        cellGroup.add(cellShapeRow);
-        cellGroup.add(cellSizeRow);
-
-        // Add groups to page
-        page.add(gridGroup);
-        page.add(cellGroup);
-        page.add(logGroup);
-
-        // Add page to window
-        window.add(page);
     }
 }
