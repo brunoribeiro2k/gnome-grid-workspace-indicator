@@ -61,30 +61,31 @@ export class SVGGenerator {
         }`;
     }
 
-    // Base layout and grid configuration
-    static _createSvgLayout(styles) {
+    // Update _createSvgLayout to use svgWidth and svgHeight instead of SVG_SIZE
+    static _createSvgLayout(styles, svgWidth, svgHeight) {
         return `
-<svg xmlns="http://www.w3.org/2000/svg" width="${this.SVG_SIZE}" height="${this.SVG_SIZE}" 
-    viewBox="0 0 ${this.SVG_SIZE} ${this.SVG_SIZE}">
+<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="${svgHeight}" 
+    viewBox="0 0 ${svgWidth} ${svgHeight}">
     <style>${styles}</style>`;
     }
 
-    static _createGridLines(rows, cols, style = '') {
+    // Update _createGridLines to accept svgWidth and svgHeight
+    static _createGridLines(rows, cols, svgWidth, svgHeight, style = '') {
         if (!style) return '';
         
-        const cellWidth = this.SVG_SIZE / cols;
-        const cellHeight = this.SVG_SIZE / rows;
+        const cellWidth = svgWidth / cols;
+        const cellHeight = svgHeight / rows;
         let grid = '';
         
         // Vertical lines
         for (let i = 1; i < cols; i++) {
             const x = i * cellWidth;
-            grid += `    <line x1="${x}" y1="0" x2="${x}" y2="${this.SVG_SIZE}" class="grid-line"/>\n`;
+            grid += `    <line x1="${x}" y1="0" x2="${x}" y2="${svgHeight}" class="grid-line"/>\n`;
         }
         // Horizontal lines
         for (let i = 1; i < rows; i++) {
             const y = i * cellHeight;
-            grid += `    <line x1="0" y1="${y}" x2="${this.SVG_SIZE}" y2="${y}" class="grid-line"/>\n`;
+            grid += `    <line x1="0" y1="${y}" x2="${svgWidth}" y2="${y}" class="grid-line"/>\n`;
         }
         return grid;
     }
@@ -119,16 +120,16 @@ export class SVGGenerator {
         return `${baseClass} with-apps`;
     }
 
-    // Main generator function
-    static create(x, y, rows, cols, withApps = [], size = this.SVG_SIZE) {
-        this.SVG_SIZE = size; // Update size for this generation
-        const cellWidth = this.SVG_SIZE / cols;
-        const cellHeight = this.SVG_SIZE / rows;
+    // Modify create method to accept svgHeight and optional svgWidth
+    static create(x, y, rows, cols, withApps = [], svgHeight = this.SVG_SIZE, svgWidth = null) {
+        if (svgWidth === null) svgWidth = svgHeight;
+        const cellWidth = svgWidth / cols;
+        const cellHeight = svgHeight / rows;
 
-        let svg = this._createSvgLayout(this._generateStyles(this.Config));
+        let svg = this._createSvgLayout(this._generateStyles(this.Config), svgWidth, svgHeight);
         
         if (this.Config.grid.visible) {
-            svg += this._createGridLines(rows, cols, this.Config.grid.color);
+            svg += this._createGridLines(rows, cols, svgWidth, svgHeight, this.Config.grid.color);
         }
 
         // Generate cells
