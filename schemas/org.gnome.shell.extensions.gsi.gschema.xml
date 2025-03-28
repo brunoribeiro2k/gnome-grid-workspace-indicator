@@ -18,6 +18,10 @@
       <default>'circle'</default>
       <summary>Cell shape</summary>
       <description>Shape of workspace cells (circle or square)</description>
+      <choices>
+        <choice value="circle"/>
+        <choice value="square"/>
+      </choices>
     </key>
     <key name="cell-size" type="i">
       <default>65</default>
@@ -25,7 +29,7 @@
       <description>Size of cells as percentage of available space</description>
     </key>
 
-    <!-- Theme settings - Base states -->
+    <!-- Theme settings -->
     <key name="inactive-fill" type="s">
       <default>'rgba(128, 128, 128, 0.5)'</default>
       <summary>Inactive cell fill color</summary>
@@ -34,8 +38,6 @@
       <default>'rgba(255, 255, 255, 1)'</default>
       <summary>Active cell fill color</summary>
     </key>
-
-    <!-- New cumulative withApps outline settings -->
     <key name="apps-outline-color" type="s">
       <default>'rgba(255, 255, 255, 1)'</default>
       <summary>Apps outline color</summary>
@@ -46,8 +48,13 @@
       <summary>Apps outline thickness</summary>
       <description>Outline thickness applied to cells with apps (0=none, 1.5=medium, 3=thick). Continuous values are supported.</description>
     </key>
+    <key name="outline-active" type="b">
+      <default>true</default>
+      <summary>Apply outline to active workspace</summary>
+      <description>Whether to show outline on the active workspace regardless of apps</description>
+    </key>
 
-    <!-- New logging setting -->
+    <!-- Logging settings -->
     <key name="log-debug" type="b">
       <default>false</default>
       <summary>Enable Debug Logging</summary>

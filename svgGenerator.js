@@ -16,7 +16,8 @@ export class SVGGenerator {
                 fill: 'rgba(128, 128, 128, 0.5)'
             },
             active: {
-                fill: 'rgba(255, 255, 255, 1)'
+                fill: 'rgba(255, 255, 255, 1)',
+                outlineWithApps: false
             },
             withApps: {
                 outline: {
@@ -113,7 +114,9 @@ export class SVGGenerator {
 
     static _getCellClass(col, row, isActive, hasApps) {
         const baseClass = isActive ? this.CellClass.ACTIVE : this.CellClass.INACTIVE;
-        return hasApps ? `${baseClass} with-apps` : baseClass;
+        if (!hasApps) return baseClass;
+        if (isActive && !this.Config.states.active.outlineWithApps) return baseClass;
+        return `${baseClass} with-apps`;
     }
 
     // Main generator function

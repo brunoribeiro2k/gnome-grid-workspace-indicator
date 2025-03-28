@@ -13,6 +13,7 @@ function getExtensionDir() {
 
 export default class GridWorkspacePreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
+        window.set_default_size(600, 660);
         let extensionDir = getExtensionDir();
         let uiFile = extensionDir + '/settings.ui';
         log('Loading UI file from: ' + uiFile);
@@ -41,12 +42,20 @@ export default class GridWorkspacePreferences extends ExtensionPreferences {
         
         // Cell Settings
         const cellShapeDropdown = builder.get_object('cell_shape_dropdown');
-        settings.bind(
-            'cell-shape',
-            cellShapeDropdown,
-            'selected',
-            Gio.SettingsBindFlags.DEFAULT
-        );
+        const updateCellShape = () => {
+            const shape = settings.get_string('cell-shape');
+            cellShapeDropdown.selected = shape === 'circle' ? 0 : 1;
+        };
+        
+        updateCellShape();
+        cellShapeDropdown.connect('notify::selected', () => {
+            const shape = cellShapeDropdown.selected === 0 ? 'circle' : 'square';
+            settings.set_string('cell-shape', shape);
+        });
+        
+        settings.connect('changed::cell-shape', () => {
+            updateCellShape();
+        });
 
         const cellSizeScale = builder.get_object('cell_size_scale');
         settings.bind(
@@ -71,6 +80,8 @@ export default class GridWorkspacePreferences extends ExtensionPreferences {
             Gio.SettingsBindFlags.DEFAULT
         );
 
+        this._bindSwitch(builder, settings, 'outline-active', 'outline_active_switch');
+
         // Debug Logging
         this._bindSwitch(builder, settings, 'log-debug', 'debug_logging_switch');
 
@@ -85,6 +96,7 @@ export default class GridWorkspacePreferences extends ExtensionPreferences {
             settings.reset('active-fill');
             settings.reset('apps-outline-color');
             settings.reset('apps-outline-thickness');
+            settings.reset('outline-active');
             settings.reset('log-debug');
         });
     }

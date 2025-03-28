@@ -236,5 +236,6 @@ export default class IndicatorExampleExtension extends Extension {
         SVGGenerator.Config.states.active.fill = this._settings.get_string('active-fill');
         SVGGenerator.Config.states.withApps.outline.color = this._settings.get_string('apps-outline-color');
         SVGGenerator.Config.states.withApps.outline.thickness = this._settings.get_double('apps-outline-thickness');
+        SVGGenerator.Config.states.active.outlineWithApps = this._settings.get_boolean('outline-active');
     }
 }
