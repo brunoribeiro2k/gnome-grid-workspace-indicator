@@ -46,26 +46,23 @@ class WorkspaceSettings {
     }
 
     _loadSettings() {
+		// Grid
+		this._gridSize = 95
+        this._gridOutlineThickness = '0px';
+        this._gridOutlineColor = 'white';
+		// Base cell
         this._cellSize = this._settings.get_int('cell-size');
         this._cellShape = this._settings.get_string('cell-shape');
+		// Active/inactive
         this._activeFill = this._settings.get_string('active-fill');
         this._inactiveFill = this._settings.get_string('inactive-fill');
-        this._logDebug = this._settings.get_boolean('log-debug');
-        // New settings:
-        this._appsOutlineColor = this._settings.get_string('apps-outline-color');
+        // Has apps
+		this._appsOutlineColor = this._settings.get_string('apps-outline-color');
         this._appsOutlineThickness = this._settings.get_int('apps-outline-thickness');
         this._outlineActive = this._settings.get_boolean('outline-active');
+		// Debug
+		this._logDebug = this._settings.get_boolean('log-debug');
         WorkspaceSettings.LOG_LEVEL = this._logDebug ? 'debug' : 'error';
-        logWithLevel('debug', 'Settings reloaded:', {
-            cellSize: this._cellSize,
-            cellShape: this._cellShape,
-            activeFill: this._activeFill,
-            inactiveFill: this._inactiveFill,
-            logDebug: this._logDebug,
-            appsOutlineColor: this._appsOutlineColor,
-            appsOutlineThickness: this._appsOutlineThickness,
-            outlineActive: this._outlineActive
-        });
     }
 
     _notifyCallbacks() {
@@ -85,15 +82,22 @@ class WorkspaceSettings {
     }
 
     // Properties
+	// Grid
+    get gridSize() { return this._gridSize; }
+    get gridOutlineThickness() { return this._gridOutlineThickness; }
+    get gridOutlineColor() { return this._gridOutlineColor; }
+	// Base cell
     get cellSize() { return this._cellSize; }
     get cellShape() { return this._cellShape; }
+	// Active/inactive
     get activeFill() { return this._activeFill; }
     get inactiveFill() { return this._inactiveFill; }
-    get logDebug() { return this._logDebug; }
-    // New getters:
+	// Has apps
     get appsOutlineColor() { return this._appsOutlineColor; }
     get appsOutlineThickness() { return this._appsOutlineThickness; }
     get outlineActive() { return this._outlineActive; }
+	// Debug
+    get logDebug() { return this._logDebug; }
 
     // Subscribe to settings changes
     connect(callback) {
@@ -131,6 +135,10 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
             layout_manager: new Clutter.GridLayout(),
             reactive: true,
             style_class: 'workspace-indicator-grid',
+            x_align: Clutter.ActorAlign.CENTER, // changed: using Clutter.ActorAlign.CENTER
+            y_align: Clutter.ActorAlign.CENTER, // changed: using Clutter.ActorAlign.CENTER
+            // x_expand: false,
+            // y_expand: false,
         });
         this.add_child(this._grid);
         // Create the popup menu for settings.
@@ -145,6 +153,7 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
         this._wsAddedId = WorkspaceManager.connect('workspace-added', this._onWorkspaceChanged.bind(this));
         this._wsRemovedId = WorkspaceManager.connect('workspace-removed', this._onWorkspaceChanged.bind(this));
         this._updateCells();
+        this._updateGridOutline();
     }
 
     _clearGrid() {
@@ -179,27 +188,84 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
         return cell;
     }
 
+	_calculateCellLayout(maxSide, numCells, occupationPercentage) {
+		// Calculate the maximum size available per cell (integer)
+		const cellSize = Math.floor(maxSide / numCells);
+		
+		// Compute the ideal core size (might be fractional)
+		const idealCore = cellSize * (occupationPercentage / 100);
+		
+		// Start with a candidate core size rounded to nearest integer
+		let candidate = Math.round(idealCore);
+		// Ensure candidate is within valid bounds [0, cellSize]
+		candidate = Math.max(0, Math.min(cellSize, candidate));
+		
+		// We require that the remaining space (cellSize - candidate) can be split evenly for margins.
+		// If not, try adjusting candidate by +1 or -1.
+		if ((cellSize - candidate) % 2 !== 0) {
+		  const candidateDown = candidate - 1;
+		  const candidateUp = candidate + 1;
+		  const validDown = candidateDown >= 0 && (cellSize - candidateDown) % 2 === 0;
+		  const validUp = candidateUp <= cellSize && (cellSize - candidateUp) % 2 === 0;
+		  
+		  if (validDown && validUp) {
+			// Choose the one that stays closest to the ideal core size.
+			candidate = (Math.abs(candidateDown - idealCore) <= Math.abs(candidateUp - idealCore))
+			  ? candidateDown
+			  : candidateUp;
+		  } else if (validDown) {
+			candidate = candidateDown;
+		  } else if (validUp) {
+			candidate = candidateUp;
+		  }
+		  // If neither candidate yields an even margin, we fall back on the original candidate.
+		}
+		
+		// Calculate the margin per side (since margin is shared equally on left/right or top/bottom).
+		const margin = (cellSize - candidate) / 2;
+		
+		return { coreSize: candidate, margin: margin };
+	  }
+
     _buildGrid() {
-        logWithLevel('debug', 'Building grid...');
-        this._clearGrid();
+		this._clearGrid();
         
         const gridLayout = this._grid.layout_manager;
         const nRows = Math.max(WorkspaceManager.get_layout_rows(), 1);
         const nColumns = Math.max(WorkspaceManager.get_layout_columns(), 1);
-        logWithLevel('debug', `Grid layout: ${nRows} rows x ${nColumns} columns`);
-        
+		logWithLevel('debug', `Grid layout: ${nRows} rows x ${nColumns} columns`);
+
+
         // Calculate and store layout properties
-        const panelHeight = Main.panel.height - 2;
-        const cellSize = panelHeight / nRows;
+        const panelHeight = Main.panel.height;
+        const auxIndicatorHeight = panelHeight * (this._settings.gridSize / 100);
+		const cellLayout = this._calculateCellLayout(auxIndicatorHeight, nRows, this._settings.cellSize);
+		const cellSize = cellLayout.coreSize;
+		const cellMargin = cellLayout.margin;
+
+		const indicatorHeight = (cellSize + cellMargin) * nRows;
+		const indicatorWidth = (cellSize + cellMargin) * nColumns;
         const percent = this._settings.cellSize / 100;
-        
+		
         this._layoutProperties = {
-            widgetSize: cellSize * percent,
-            margin: (cellSize - (cellSize * percent)) / 2,
-            borderRadius: this._settings.cellShape.toLowerCase() === 'circle' ? (cellSize * percent) / 2 : 0
+			widgetSize: cellSize,
+            margin: cellMargin,
+			borderRadius: this._settings.cellShape.toLowerCase() === 'circle' ? (cellSize * percent) / 2 : 0
         };
+
+        // Fix grid dimensions to center it in the indicator space.
+        // this._grid.set_height(indicatorHeight);
+        // this._grid.set_width(indicatorWidth);
         
-        // Construct cell widgets
+		logWithLevel('debug', `Building grid: ${JSON.stringify({
+			panelHeight: panelHeight,
+			auxIndicatorHeight: auxIndicatorHeight,
+			indicatorHeight: indicatorHeight,
+			indicatorWidth: indicatorWidth,
+			layoutProperties: this._layoutProperties
+		})}`);
+
+		// Construct cell widgets
         for (let row = 0; row < nRows; row++) {
             for (let col = 0; col < nColumns; col++) {
                 const cell = this._settings.cellShape.toLowerCase() === 'circle' 
@@ -272,6 +338,7 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
         logWithLevel('debug', 'Indicator: Settings changed, updating display');
         this._buildGrid();
         this._updateCells();
+        this._updateGridOutline();
     }
 
     // New: Move getWorkspacesWithApps into the class as a private method.
@@ -285,6 +352,11 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
             }
         });
         return Array.from(workspacesWithApps);
+    }
+
+    // New private method to update grid outline
+    _updateGridOutline() {
+        this._grid.set_style(`border: ${this._settings.gridOutlineThickness} solid ${this._settings.gridOutlineColor};`);
     }
 
     destroy() {
