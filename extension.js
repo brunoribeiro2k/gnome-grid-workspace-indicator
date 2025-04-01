@@ -51,13 +51,20 @@ class WorkspaceSettings {
         this._activeFill = this._settings.get_string('active-fill');
         this._inactiveFill = this._settings.get_string('inactive-fill');
         this._logDebug = this._settings.get_boolean('log-debug');
+        // New settings:
+        this._appsOutlineColor = this._settings.get_string('apps-outline-color');
+        this._appsOutlineThickness = this._settings.get_int('apps-outline-thickness');
+        this._outlineActive = this._settings.get_boolean('outline-active');
         WorkspaceSettings.LOG_LEVEL = this._logDebug ? 'debug' : 'error';
         logWithLevel('debug', 'Settings reloaded:', {
             cellSize: this._cellSize,
             cellShape: this._cellShape,
             activeFill: this._activeFill,
             inactiveFill: this._inactiveFill,
-            logDebug: this._logDebug
+            logDebug: this._logDebug,
+            appsOutlineColor: this._appsOutlineColor,
+            appsOutlineThickness: this._appsOutlineThickness,
+            outlineActive: this._outlineActive
         });
     }
 
@@ -83,6 +90,10 @@ class WorkspaceSettings {
     get activeFill() { return this._activeFill; }
     get inactiveFill() { return this._inactiveFill; }
     get logDebug() { return this._logDebug; }
+    // New getters:
+    get appsOutlineColor() { return this._appsOutlineColor; }
+    get appsOutlineThickness() { return this._appsOutlineThickness; }
+    get outlineActive() { return this._outlineActive; }
 
     // Subscribe to settings changes
     connect(callback) {
@@ -200,10 +211,17 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
         }
     }
     
-    _updateCell(cell, isActive) {
-        // Update styles
+    _updateCell(cell, isActive, hasApps) {
+        // Determine outline based on open apps and active status.
+        let outline = 'none';
+        if (hasApps) {
+            if (!isActive || this._settings.outlineActive) {
+                outline = `${this._settings.appsOutlineThickness}px solid ${this._settings.appsOutlineColor}`;
+            }
+        }
         cell.set_style(`
             background-color: ${isActive ? this._settings.activeFill : this._settings.inactiveFill};
+            border: ${outline};
             border-radius: ${this._settings.cellShape.toLowerCase() === 'circle' ? this._layoutProperties.borderRadius : 0}px;
             margin: ${this._layoutProperties.margin}px;
         `);
@@ -212,8 +230,11 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
     _updateCells() {
         let activeIndex = WorkspaceManager.get_active_workspace_index();
         logWithLevel('debug', `Active workspace index: ${activeIndex}`);
+        // Determine which workspaces have open windows.
+        const workspacesWithApps = this._getWorkspacesWithApps();
         this._cells.forEach((cell, idx) => {
-            this._updateCell(cell, idx === activeIndex);
+            const hasApps = workspacesWithApps.includes(idx);
+            this._updateCell(cell, idx === activeIndex, hasApps);
         });
     }
     
@@ -251,6 +272,19 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
         logWithLevel('debug', 'Indicator: Settings changed, updating display');
         this._buildGrid();
         this._updateCells();
+    }
+
+    // New: Move getWorkspacesWithApps into the class as a private method.
+    _getWorkspacesWithApps() {
+        let workspacesWithApps = new Set();
+        let windows = global.get_window_actors().map(actor => actor.meta_window);
+        windows.forEach(win => {
+            let ws = win.get_workspace();
+            if (ws) {
+                workspacesWithApps.add(ws.index());
+            }
+        });
+        return Array.from(workspacesWithApps);
     }
 
     destroy() {

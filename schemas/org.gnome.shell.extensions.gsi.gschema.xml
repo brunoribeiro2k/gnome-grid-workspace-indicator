@@ -43,10 +43,10 @@
       <summary>Apps outline color</summary>
       <description>Outline color applied to cells with apps.</description>
     </key>
-    <key name="apps-outline-thickness" type="d">
-      <default>1.0</default>
+    <key name="apps-outline-thickness" type="i">
+      <default>1</default>
       <summary>Apps outline thickness</summary>
-      <description>Outline thickness applied to cells with apps (0=none, 1.5=medium, 3=thick). Continuous values are supported.</description>
+      <description>Outline thickness applied to cells with apps (0=none, 1=medium, 3=thick). Integer values represent pixels.</description>
     </key>
     <key name="outline-active" type="b">
       <default>true</default>

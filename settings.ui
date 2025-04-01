@@ -137,20 +137,18 @@
                         <property name="spacing">12</property>
                         <property name="valign">center</property>
                         <child>
-                          <object class="GtkScale" id="outline_thickness_scale">
+                          <object class="GtkSpinButton" id="outline_thickness_scale">
                             <property name="orientation">horizontal</property>
                             <property name="width-request">150</property>
                             <property name="valign">center</property>
-                            <property name="digits">1</property>
-                            <property name="draw-value">true</property>
-                            <property name="value-pos">right</property>
+                            <property name="numeric">true</property>
                             <property name="adjustment">
                               <object class="GtkAdjustment">
                                 <property name="lower">0</property>
                                 <property name="upper">3</property>
                                 <property name="value">1</property>
-                                <property name="step-increment">0.1</property>
-                                <property name="page-increment">0.5</property>
+                                <property name="step-increment">1</property>
+                                <property name="page-increment">1</property>
                               </object>
                             </property>
                           </object>
