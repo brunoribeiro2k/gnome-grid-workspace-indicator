@@ -130,11 +130,10 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
         // Create cells based on the current workspace layout.
         this._buildGrid();
         // Listen for workspace changes.
-        this._workspaceSignal = WorkspaceManager.connect('active-workspace-changed', this._updateActiveWorkspace.bind(this));
+        this._workspaceSignal = WorkspaceManager.connect('active-workspace-changed', this._updateCells.bind(this));
         this._wsAddedId = WorkspaceManager.connect('workspace-added', this._onWorkspaceChanged.bind(this));
         this._wsRemovedId = WorkspaceManager.connect('workspace-removed', this._onWorkspaceChanged.bind(this));
-        this._updateActiveWorkspace();
-        this._updateCss(); // Apply CSS initially for visible styling
+        this._updateCells();
     }
 
     _clearGrid() {
@@ -201,38 +200,27 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
         }
     }
     
-    _updateActiveWorkspace() {
+    _updateCell(cell, isActive) {
+        // Update styles
+        cell.set_style(`
+            background-color: ${isActive ? this._settings.activeFill : this._settings.inactiveFill};
+            border-radius: ${this._settings.cellShape.toLowerCase() === 'circle' ? this._layoutProperties.borderRadius : 0}px;
+            margin: ${this._layoutProperties.margin}px;
+        `);
+    }
+
+    _updateCells() {
         let activeIndex = WorkspaceManager.get_active_workspace_index();
         logWithLevel('debug', `Active workspace index: ${activeIndex}`);
         this._cells.forEach((cell, idx) => {
-            if (idx === activeIndex) {
-                cell.add_style_class_name('active');
-                cell.remove_style_class_name('inactive');
-            } else {
-                cell.add_style_class_name('inactive');
-                cell.remove_style_class_name('active');
-            }
-        });
-        this._updateCss(); // Update styles after changing classes
-    }
-    
-    _updateCss() {
-        logWithLevel('debug', 'Updating CSS based on settings');
-        this._cells.forEach((cell, idx) => {
-            const isActive = idx === WorkspaceManager.get_active_workspace_index();
-            cell.set_style(`
-                background-color: ${isActive ? this._settings.activeFill : this._settings.inactiveFill};
-                border-radius: ${this._settings.cellShape.toLowerCase() === 'circle' ? this._layoutProperties.borderRadius : 0}px;
-                margin: ${this._layoutProperties.margin}px;
-            `);
+            this._updateCell(cell, idx === activeIndex);
         });
     }
     
     _onWorkspaceChanged() {
         GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
             this._buildGrid();
-            this._updateActiveWorkspace(); // This will also call _updateCss
-            this._updateCss(); // Extra call to ensure styles are applied
+            this._updateCells();
             return GLib.SOURCE_REMOVE;
         });
     }
@@ -262,7 +250,7 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
     _onSettingsChanged() {
         logWithLevel('debug', 'Indicator: Settings changed, updating display');
         this._buildGrid();
-        this._updateActiveWorkspace();
+        this._updateCells();
     }
 
     destroy() {
