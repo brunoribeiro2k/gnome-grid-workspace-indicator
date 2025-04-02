@@ -20,105 +20,7 @@ import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
-
-class WorkspaceSettings {
-    static instance = null;
-    static schema = null;
-    static LOG_LEVEL = 'error';
-
-    constructor() {
-        if (WorkspaceSettings.instance) {
-            return WorkspaceSettings.instance;
-        }
-        this._settings = WorkspaceSettings.schema;
-        this._loadSettings();
-        
-        // Connect to settings changes with the schema signal
-        this._settingsChangedId = this._settings.connect('changed', (_settings, key) => {
-            logWithLevel('debug', `Setting changed: ${key}`);
-            this._loadSettings();
-            this._notifyCallbacks();
-        });
-        
-        this._callbacks = new Set();
-        WorkspaceSettings.LOG_LEVEL = this._logDebug ? 'debug' : 'error';
-        WorkspaceSettings.instance = this;
-    }
-
-    _loadSettings() {
-		// Grid
-		this._gridSize = 95
-        this._gridOutlineThickness = '0px';
-        this._gridOutlineColor = 'white';
-		// Base cell
-        this._cellSize = this._settings.get_int('cell-size');
-        this._cellShape = this._settings.get_string('cell-shape');
-		// Active/inactive
-        this._activeFill = this._settings.get_string('active-fill');
-        this._inactiveFill = this._settings.get_string('inactive-fill');
-        // Has apps
-		this._appsOutlineColor = this._settings.get_string('apps-outline-color');
-        this._appsOutlineThickness = this._settings.get_int('apps-outline-thickness');
-        this._outlineActive = this._settings.get_boolean('outline-active');
-		// Debug
-		this._logDebug = this._settings.get_boolean('log-debug');
-        WorkspaceSettings.LOG_LEVEL = this._logDebug ? 'debug' : 'error';
-    }
-
-    _notifyCallbacks() {
-        logWithLevel('debug', `Notifying ${this._callbacks.size} callbacks`);
-        this._callbacks.forEach(callback => {
-            try {
-                callback();
-            } catch (e) {
-                logWithLevel('error', 'Error in settings callback', e);
-            }
-        });
-    }
-
-    static initialize(schema) {
-        WorkspaceSettings.schema = schema;
-        return new WorkspaceSettings();
-    }
-
-    // Properties
-	// Grid
-    get gridSize() { return this._gridSize; }
-    get gridOutlineThickness() { return this._gridOutlineThickness; }
-    get gridOutlineColor() { return this._gridOutlineColor; }
-	// Base cell
-    get cellSize() { return this._cellSize; }
-    get cellShape() { return this._cellShape; }
-	// Active/inactive
-    get activeFill() { return this._activeFill; }
-    get inactiveFill() { return this._inactiveFill; }
-	// Has apps
-    get appsOutlineColor() { return this._appsOutlineColor; }
-    get appsOutlineThickness() { return this._appsOutlineThickness; }
-    get outlineActive() { return this._outlineActive; }
-	// Debug
-    get logDebug() { return this._logDebug; }
-
-    // Subscribe to settings changes
-    connect(callback) {
-        logWithLevel('debug', 'Adding settings callback');
-        this._callbacks.add(callback);
-    }
-
-    disconnect(callback) {
-        logWithLevel('debug', 'Removing settings callback');
-        this._callbacks.delete(callback);
-    }
-
-    destroy() {
-        if (this._settingsChangedId) {
-            this._settings.disconnect(this._settingsChangedId);
-            this._settingsChangedId = null;
-        }
-        this._callbacks.clear();
-        WorkspaceSettings.instance = null;
-    }
-}
+import IndicatorSettings from './indicatorSettings.js';
 
 const WorkspaceManager = global.workspace_manager;
 
@@ -127,7 +29,7 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
     _init(extension) {
         super._init(0.0, _('Workspace Indicator'));
         this._extension = extension;
-        this._settings = WorkspaceSettings.instance;
+        this._settings = IndicatorSettings.instance;
         this._settingsCallback = this._onSettingsChanged.bind(this);
         this._settings.connect(this._settingsCallback);
         this._layoutProperties = {};
@@ -135,20 +37,15 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
             layout_manager: new Clutter.GridLayout(),
             reactive: true,
             style_class: 'workspace-indicator-grid',
-            x_align: Clutter.ActorAlign.CENTER, // changed: using Clutter.ActorAlign.CENTER
-            y_align: Clutter.ActorAlign.CENTER, // changed: using Clutter.ActorAlign.CENTER
-            // x_expand: false,
-            // y_expand: false,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER,
         });
         this.add_child(this._grid);
-        // Create the popup menu for settings.
         this.menu.addAction('Settings', () => {
             GLib.spawn_command_line_async(`gnome-shell-extension-prefs ${this._extension.metadata.uuid}`);
         });
         this.connect('scroll-event', this._onScroll.bind(this));
-        // Create cells based on the current workspace layout.
         this._buildGrid();
-        // Listen for workspace changes.
         this._workspaceSignal = WorkspaceManager.connect('active-workspace-changed', this._updateCells.bind(this));
         this._wsAddedId = WorkspaceManager.connect('workspace-added', this._onWorkspaceChanged.bind(this));
         this._wsRemovedId = WorkspaceManager.connect('workspace-removed', this._onWorkspaceChanged.bind(this));
@@ -233,10 +130,8 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
         const gridLayout = this._grid.layout_manager;
         const nRows = Math.max(WorkspaceManager.get_layout_rows(), 1);
         const nColumns = Math.max(WorkspaceManager.get_layout_columns(), 1);
-		logWithLevel('debug', `Grid layout: ${nRows} rows x ${nColumns} columns`);
+		console.debug(`Grid layout: ${nRows} rows x ${nColumns} columns`);
 
-
-        // Calculate and store layout properties
         const panelHeight = Main.panel.height;
         const auxIndicatorHeight = panelHeight * (this._settings.gridSize / 100);
 		const cellLayout = this._calculateCellLayout(auxIndicatorHeight, nRows, this._settings.cellSize);
@@ -257,7 +152,7 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
         // this._grid.set_height(indicatorHeight);
         // this._grid.set_width(indicatorWidth);
         
-		logWithLevel('debug', `Building grid: ${JSON.stringify({
+		console.debug(`Building grid: ${JSON.stringify({
 			panelHeight: panelHeight,
 			auxIndicatorHeight: auxIndicatorHeight,
 			indicatorHeight: indicatorHeight,
@@ -295,7 +190,7 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
 
     _updateCells() {
         let activeIndex = WorkspaceManager.get_active_workspace_index();
-        logWithLevel('debug', `Active workspace index: ${activeIndex}`);
+        console.debug(`Active workspace index: ${activeIndex}`);
         // Determine which workspaces have open windows.
         const workspacesWithApps = this._getWorkspacesWithApps();
         this._cells.forEach((cell, idx) => {
@@ -314,7 +209,7 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
     
     _onScroll(actor, event) {
         let direction = event.get_scroll_direction();
-        logWithLevel('debug', `Scroll event direction: ${direction}`);
+        console.debug(`Scroll event direction: ${direction}`);
         if (direction === Clutter.ScrollDirection.UP || direction === Clutter.ScrollDirection.DOWN) {
             let activeIndex = WorkspaceManager.get_active_workspace_index();
             let n = WorkspaceManager.get_n_workspaces();
@@ -335,7 +230,7 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
     }
     
     _onSettingsChanged() {
-        logWithLevel('debug', 'Indicator: Settings changed, updating display');
+        console.debug('Indicator: Settings changed, updating display');
         this._buildGrid();
         this._updateCells();
         this._updateGridOutline();
@@ -378,16 +273,9 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
 }
 );
 
-function logWithLevel(level, message, error = null) {
-    const levels = ['debug', 'info', 'error'];
-    if (levels.indexOf(level) >= levels.indexOf(WorkspaceSettings.LOG_LEVEL)) {
-        level === 'error' && error ? logError(error, message) : log(`[${level.toUpperCase()}] ${message}`);
-    }
-}
-
 export default class GridWorkspaceIndicatorExtension extends Extension {
     enable() {
-        WorkspaceSettings.initialize(this.getSettings());
+        IndicatorSettings.initialize(this.getSettings());
         this._indicator = new GridWorkspaceIndicator(this);
         Main.panel.addToStatusArea(this.uuid, this._indicator);
     }
@@ -397,6 +285,6 @@ export default class GridWorkspaceIndicatorExtension extends Extension {
             this._indicator.destroy();
             this._indicator = null;
         }
-        WorkspaceSettings.instance?.destroy();
+        IndicatorSettings.instance?.destroy();
     }
 }

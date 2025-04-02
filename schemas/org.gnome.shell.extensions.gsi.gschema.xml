@@ -1,18 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist>
   <schema id="org.gnome.shell.extensions.gsi" path="/org/gnome/shell/extensions/gsi/">
-    <!-- Grid settings -->
-    <key name="grid-visible" type="b">
-      <default>false</default>
-      <summary>Show grid lines</summary>
-      <description>Whether to show grid lines between workspaces</description>
-    </key>
-    <key name="grid-color" type="s">
-      <default>'rgba(255, 255, 255, 1)'</default>
-      <summary>Grid color</summary>
-      <description>Color of the grid lines (if visible)</description>
-    </key>
-    
     <!-- Cell settings -->
     <key name="cell-shape" type="s">
       <default>'circle'</default>
@@ -55,10 +43,5 @@
     </key>
 
     <!-- Logging settings -->
-    <key name="log-debug" type="b">
-      <default>false</default>
-      <summary>Enable Debug Logging</summary>
-      <description>Enable debug level logs.</description>
-    </key>
   </schema>
 </schemalist>

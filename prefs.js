@@ -13,7 +13,6 @@ function getExtensionDir() {
 
 export default class GridWorkspacePreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
-        window.set_default_size(600, 660);
         let extensionDir = getExtensionDir();
         let uiFile = extensionDir + '/settings.ui';
         log('Loading UI file from: ' + uiFile);
@@ -36,10 +35,6 @@ export default class GridWorkspacePreferences extends ExtensionPreferences {
         // Get settings
         const settings = this.getSettings();
 
-        // Grid Settings
-        this._bindSwitch(builder, settings, 'grid-visible', 'grid_visible_switch');
-        this._bindColorButton(builder, settings, 'grid-color', 'grid_color_button');
-        
         // Cell Settings
         const cellShapeDropdown = builder.get_object('cell_shape_dropdown');
         const updateCellShape = () => {
@@ -82,9 +77,6 @@ export default class GridWorkspacePreferences extends ExtensionPreferences {
 
         this._bindSwitch(builder, settings, 'outline-active', 'outline_active_switch');
 
-        // Debug Logging
-        this._bindSwitch(builder, settings, 'log-debug', 'debug_logging_switch');
-
         // Reset button
         const resetButton = builder.get_object('reset_button');
         resetButton.connect('clicked', () => {
@@ -97,7 +89,6 @@ export default class GridWorkspacePreferences extends ExtensionPreferences {
             settings.reset('apps-outline-color');
             settings.reset('apps-outline-thickness');
             settings.reset('outline-active');
-            settings.reset('log-debug');
         });
     }
 
