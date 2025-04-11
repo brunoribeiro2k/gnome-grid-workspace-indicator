@@ -12,7 +12,7 @@
       </choices>
     </key>
     <key name="cell-size" type="i">
-      <default>65</default>
+      <default>75</default>
       <summary>Cell size</summary>
       <description>Size of cells as percentage of available space</description>
     </key>

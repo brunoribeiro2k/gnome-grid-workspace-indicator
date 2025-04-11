@@ -2,16 +2,30 @@ import Gdk from 'gi://Gdk';
 import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
 import Gio from 'gi://Gio';
-import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
+import { ExtensionPreferences } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-// Get the extension directory based on the ES module URL.
+/**
+ * Returns the directory of the current extension based on the ES module URL.
+ *
+ * @returns {string} The absolute path to the extension directory.
+ */
 function getExtensionDir() {
     let uri = import.meta.url;
     let path = uri.startsWith("file://") ? uri.slice("file://".length) : uri;
     return GLib.path_get_dirname(path);
 }
 
+/**
+ * Preferences window implementation for the Grid Workspace extension.
+ * Extends ExtensionPreferences and builds the preferences UI using a Gtk.Builder file.
+ */
 export default class GridWorkspacePreferences extends ExtensionPreferences {
+    /**
+     * Fills the preferences window with the UI loaded from the settings UI file and binds 
+     * the widget events to the corresponding settings.
+     *
+     * @param {Gtk.Window} window - The preferences window to populate.
+     */
     fillPreferencesWindow(window) {
         let extensionDir = getExtensionDir();
         let uiFile = extensionDir + '/settings.ui';
@@ -32,26 +46,25 @@ export default class GridWorkspacePreferences extends ExtensionPreferences {
         window.add(mainWidget);
         log('Preferences UI loaded successfully.');
 
-        // Get settings
+        // Get settings from the extension.
         const settings = this.getSettings();
 
-        // Cell Settings
+        // Bind cell shape dropdown.
         const cellShapeDropdown = builder.get_object('cell_shape_dropdown');
         const updateCellShape = () => {
             const shape = settings.get_string('cell-shape');
             cellShapeDropdown.selected = shape === 'circle' ? 0 : 1;
         };
-        
         updateCellShape();
         cellShapeDropdown.connect('notify::selected', () => {
             const shape = cellShapeDropdown.selected === 0 ? 'circle' : 'square';
             settings.set_string('cell-shape', shape);
         });
-        
         settings.connect('changed::cell-shape', () => {
             updateCellShape();
         });
 
+        // Bind cell size scale control.
         const cellSizeScale = builder.get_object('cell_size_scale');
         settings.bind(
             'cell-size',
@@ -60,13 +73,14 @@ export default class GridWorkspacePreferences extends ExtensionPreferences {
             Gio.SettingsBindFlags.DEFAULT
         );
 
-        // Theme Settings
+        // Bind theme settings: inactive and active fill colors.
         this._bindColorButton(builder, settings, 'inactive-fill', 'inactive_fill_button');
         this._bindColorButton(builder, settings, 'active-fill', 'active_fill_button');
 
-        // Apps Outline Settings
+        // Bind apps outline color setting.
         this._bindColorButton(builder, settings, 'apps-outline-color', 'outline_color_button');
         
+        // Bind apps outline thickness setting.
         const outlineScale = builder.get_object('outline_thickness_scale');
         settings.bind(
             'apps-outline-thickness',
@@ -75,13 +89,14 @@ export default class GridWorkspacePreferences extends ExtensionPreferences {
             Gio.SettingsBindFlags.DEFAULT
         );
 
+        // Bind switch for outline-active setting.
         this._bindSwitch(builder, settings, 'outline-active', 'outline_active_switch');
 
-        // Reset button
+        // Reset button functionality: reset all settings.
         const resetButton = builder.get_object('reset_button');
         resetButton.connect('clicked', () => {
-            settings.reset('grid-visible');
-            settings.reset('grid-color');
+            // settings.reset('grid-visible');
+            // settings.reset('grid-color');
             settings.reset('cell-shape');
             settings.reset('cell-size');
             settings.reset('inactive-fill');
@@ -92,6 +107,16 @@ export default class GridWorkspacePreferences extends ExtensionPreferences {
         });
     }
 
+    /**
+     * Binds a GSettings key to a switch widget.
+     *
+     * @param {Gtk.Builder} builder - The Gtk.Builder instance.
+     * @param {Gio.Settings} settings - The settings object.
+     * @param {string} key - The settings key to bind.
+     * @param {string} switchId - The ID of the Gtk switch in the UI.
+     *
+     * @private
+     */
     _bindSwitch(builder, settings, key, switchId) {
         settings.bind(
             key,
@@ -101,21 +126,32 @@ export default class GridWorkspacePreferences extends ExtensionPreferences {
         );
     }
 
+    /**
+     * Binds a GSettings key to a color button widget.
+     * Initializes the button's color and sets up listeners for user or settings changes.
+     *
+     * @param {Gtk.Builder} builder - The Gtk.Builder instance.
+     * @param {Gio.Settings} settings - The settings object.
+     * @param {string} key - The settings key to bind.
+     * @param {string} buttonId - The ID of the Gtk color button in the UI.
+     *
+     * @private
+     */
     _bindColorButton(builder, settings, key, buttonId) {
         const button = builder.get_object(buttonId);
-        
-        // Set initial color
+
+        // Set initial color.
         const rgba = new Gdk.RGBA();
         rgba.parse(settings.get_string(key));
         button.set_rgba(rgba);
 
-        // Connect to color changes
+        // Update settings when the button's color changes.
         button.connect('color-set', () => {
             const color = button.get_rgba().to_string();
             settings.set_string(key, color);
         });
 
-        // Watch for settings changes
+        // Update the button color if settings change externally.
         settings.connect(`changed::${key}`, () => {
             const newRgba = new Gdk.RGBA();
             newRgba.parse(settings.get_string(key));

@@ -1,25 +1,50 @@
 # Workspace Indicator
 
-A GNOME Shell extension to display and manage workspaces with icons.
+Workspace Indicator is a GNOME Shell extension that provides a visual grid for managing workspaces. It displays an indicator showing the active workspace and highlights those with open applications.
 
 ## Features
-- Displays the current workspace with an icon.
-- Allows switching workspaces by scrolling over the icon.
-- Toggles the GNOME Shell overview on click.
+
+1. **Visual Workspace Grid:** Get a clear, visual overview of your available workspaces.
+2. **Workspace Switching:** Scroll over the indicator to switch between workspaces seamlessly.
+3. **Access Preferences:** Modify extension settings easily through the built-in preferences menu.
 
 ## Installation
-1. Clone the repository:
+
+1. **Clone the repository:**
    ```bash
    git clone https://github.com/yourusername/workspace-indicator.git
    cd workspace-indicator
    ```
 
-2. Install the extension
+2. **Install the extension:**
    ```bash
    make install
    ```
 
-3. Restart gnome-shell and activate the extension
-   1. Alt + F2
-   2. Type "r" and press Enter
-   3. Enable the extension via extensions settings or ```gnome-enable gsi@fett2k.com```
+3. **Compile Settings Schema (if applicable):**  
+   The installation process automatically compiles the GSettings schemas. If you modify any schema, re-run:
+   ```bash
+   make compile-schemas
+   ```
+
+4. **Restart GNOME Shell and enable the extension:**
+   1. Press **Alt + F2**, type `r`, and press **Enter**.
+   2. Enable the extension using the GNOME Extensions application or run:
+      ```bash
+      gnome-extensions enable gsi@fett2k.com
+      ```
+
+## Uninstallation
+
+1. To uninstall the extension, run:
+   ```bash
+   make uninstall
+   ```
+
+2. Then, restart GNOME Shell (Alt+F2, type `r`).
+
+## Notes
+
+1. **Overview Toggle:** The current version does not support toggling the GNOME Shell overview on click.
+2. **Compatibility:** Ensure your GNOME Shell version is compatible with this extension.
+3. **Customization:** Additional preferences are available via the extension settings. Explore options like cell shape, cell size, and color settings to tailor the indicator to your liking.

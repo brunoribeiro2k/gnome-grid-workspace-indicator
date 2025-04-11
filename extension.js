@@ -1,17 +1,17 @@
 /* extension.js
-*
-* This program is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 2 of the License, or
-* (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*
-* SPDX-License-Identifier: GPL-2.0-or-later
-*/
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
 
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -24,8 +24,17 @@ import IndicatorSettings from './indicatorSettings.js';
 
 const WorkspaceManager = global.workspace_manager;
 
+/**
+ * Class representing a grid workspace indicator for the GNOME Shell panel.
+ * Extends PanelMenu.Button to integrate into the panel.
+ */
 const GridWorkspaceIndicator = GObject.registerClass(
 class GridWorkspaceIndicator extends PanelMenu.Button {
+    /**
+     * Constructs a new GridWorkspaceIndicator instance.
+     *
+     * @param {Object} extension - The extension instance providing metadata and settings.
+     */
     _init(extension) {
         super._init(0.0, _('Workspace Indicator'));
         this._extension = extension;
@@ -53,11 +62,22 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
         this._updateGridOutline();
     }
 
+    /**
+     * Clears the current grid by destroying all child widgets.
+     *
+     * @private
+     */
     _clearGrid() {
         this._grid.get_children().forEach(child => child.destroy());
         this._cells = [];
     }
 
+    /**
+     * Creates a new workspace cell widget.
+     *
+     * @returns {St.Widget} The new workspace cell widget.
+     * @private
+     */
     _createWorkspaceCell() {
         return new St.Widget({
             width: this._layoutProperties.widgetSize,
@@ -67,6 +87,12 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
         });
     }
 
+    /**
+     * Creates a square-shaped workspace cell widget.
+     *
+     * @returns {St.Widget} The new square workspace cell widget.
+     * @private
+     */
     _createSquareCell() {
         const cell = this._createWorkspaceCell();
         cell.set_style(`
@@ -76,6 +102,12 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
         return cell;
     }
 
+    /**
+     * Creates a circle-shaped workspace cell widget.
+     *
+     * @returns {St.Widget} The new circular workspace cell widget.
+     * @private
+     */
     _createCircleCell() {
         const cell = this._createWorkspaceCell();
         cell.set_style(`
@@ -85,6 +117,15 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
         return cell;
     }
 
+    /**
+     * Calculates layout parameters for a cell, including core size and margin.
+     *
+     * @param {number} maxSide - The maximum available size on one side.
+     * @param {number} numCells - The number of cells along that side.
+     * @param {number} occupationPercentage - The desired percentage of cell occupation.
+     * @returns {Object} An object containing {@code coreSize} and {@code margin}.
+     * @private
+     */
 	_calculateCellLayout(maxSide, numCells, occupationPercentage) {
 		// Calculate the maximum size available per cell (integer)
 		const cellSize = Math.floor(maxSide / numCells);
@@ -97,8 +138,7 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
 		// Ensure candidate is within valid bounds [0, cellSize]
 		candidate = Math.max(0, Math.min(cellSize, candidate));
 		
-		// We require that the remaining space (cellSize - candidate) can be split evenly for margins.
-		// If not, try adjusting candidate by +1 or -1.
+		// Adjust candidate so that the remaining space can be evenly split as margins.
 		if ((cellSize - candidate) % 2 !== 0) {
 		  const candidateDown = candidate - 1;
 		  const candidateUp = candidate + 1;
@@ -106,7 +146,6 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
 		  const validUp = candidateUp <= cellSize && (cellSize - candidateUp) % 2 === 0;
 		  
 		  if (validDown && validUp) {
-			// Choose the one that stays closest to the ideal core size.
 			candidate = (Math.abs(candidateDown - idealCore) <= Math.abs(candidateUp - idealCore))
 			  ? candidateDown
 			  : candidateUp;
@@ -115,15 +154,19 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
 		  } else if (validUp) {
 			candidate = candidateUp;
 		  }
-		  // If neither candidate yields an even margin, we fall back on the original candidate.
 		}
 		
-		// Calculate the margin per side (since margin is shared equally on left/right or top/bottom).
+		// Calculate the margin per side.
 		const margin = (cellSize - candidate) / 2;
 		
 		return { coreSize: candidate, margin: margin };
-	  }
+	}
 
+    /**
+     * Builds and lays out the grid of workspace cells based on current settings and workspace layout.
+     *
+     * @private
+     */
     _buildGrid() {
 		this._clearGrid();
         
@@ -148,10 +191,6 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
 			borderRadius: this._settings.cellShape.toLowerCase() === 'circle' ? (cellSize * percent) / 2 : 0
         };
 
-        // Fix grid dimensions to center it in the indicator space.
-        // this._grid.set_height(indicatorHeight);
-        // this._grid.set_width(indicatorWidth);
-        
 		console.debug(`Building grid: ${JSON.stringify({
 			panelHeight: panelHeight,
 			auxIndicatorHeight: auxIndicatorHeight,
@@ -160,7 +199,7 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
 			layoutProperties: this._layoutProperties
 		})}`);
 
-		// Construct cell widgets
+		// Attach cell widgets to the grid layout.
         for (let row = 0; row < nRows; row++) {
             for (let col = 0; col < nColumns; col++) {
                 const cell = this._settings.cellShape.toLowerCase() === 'circle' 
@@ -172,8 +211,15 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
         }
     }
     
+    /**
+     * Updates the style of an individual workspace cell based on its state.
+     *
+     * @param {St.Widget} cell - The cell widget to update.
+     * @param {boolean} isActive - Whether the workspace is active.
+     * @param {boolean} hasApps - Whether the workspace has active applications.
+     * @private
+     */
     _updateCell(cell, isActive, hasApps) {
-        // Determine outline based on open apps and active status.
         let outline = 'none';
         if (hasApps) {
             if (!isActive || this._settings.outlineActive) {
@@ -188,10 +234,14 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
         `);
     }
 
+    /**
+     * Updates all workspace cells to reflect the current active workspace and the presence of application windows.
+     *
+     * @private
+     */
     _updateCells() {
         let activeIndex = WorkspaceManager.get_active_workspace_index();
         console.debug(`Active workspace index: ${activeIndex}`);
-        // Determine which workspaces have open windows.
         const workspacesWithApps = this._getWorkspacesWithApps();
         this._cells.forEach((cell, idx) => {
             const hasApps = workspacesWithApps.includes(idx);
@@ -199,6 +249,11 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
         });
     }
     
+    /**
+     * Handler invoked when a workspace is added or removed. Rebuilds the grid accordingly.
+     *
+     * @private
+     */
     _onWorkspaceChanged() {
         GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
             this._buildGrid();
@@ -207,6 +262,14 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
         });
     }
     
+    /**
+     * Handles scroll events to cycle through workspaces.
+     *
+     * @param {Clutter.Actor} actor - The actor that received the scroll event.
+     * @param {Clutter.Event} event - The scroll event.
+     * @returns {number} The event propagation flag.
+     * @private
+     */
     _onScroll(actor, event) {
         let direction = event.get_scroll_direction();
         console.debug(`Scroll event direction: ${direction}`);
@@ -215,7 +278,7 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
             let n = WorkspaceManager.get_n_workspaces();
             let newIndex = direction === Clutter.ScrollDirection.UP ? activeIndex - 1 : activeIndex + 1;
             
-            // Handle wrap-around
+            // Handle wrap-around.
             if (newIndex < 0) {
                 newIndex = n - 1;
             } else if (newIndex >= n) {
@@ -229,6 +292,12 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
         return Clutter.EVENT_PROPAGATE;
     }
     
+    /**
+     * Handler invoked when extension settings are changed.
+     * Rebuilds the grid and updates the display.
+     *
+     * @private
+     */
     _onSettingsChanged() {
         console.debug('Indicator: Settings changed, updating display');
         this._buildGrid();
@@ -236,7 +305,12 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
         this._updateGridOutline();
     }
 
-    // New: Move getWorkspacesWithApps into the class as a private method.
+    /**
+     * Determines which workspaces currently have active application windows.
+     *
+     * @returns {Array<number>} An array of workspace indices with active applications.
+     * @private
+     */
     _getWorkspacesWithApps() {
         let workspacesWithApps = new Set();
         let windows = global.get_window_actors().map(actor => actor.meta_window);
@@ -249,11 +323,18 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
         return Array.from(workspacesWithApps);
     }
 
-    // New private method to update grid outline
+    /**
+     * Updates the grid outline based on current settings.
+     *
+     * @private
+     */
     _updateGridOutline() {
         this._grid.set_style(`border: ${this._settings.gridOutlineThickness} solid ${this._settings.gridOutlineColor};`);
     }
 
+    /**
+     * Destroys the indicator and disconnects its signals.
+     */
     destroy() {
         this._settings.disconnect(this._settingsCallback);
         if (this._workspaceSignal) {
@@ -273,13 +354,22 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
 }
 );
 
+/**
+ * Extension class to manage the lifecycle of the GridWorkspaceIndicator.
+ */
 export default class GridWorkspaceIndicatorExtension extends Extension {
+    /**
+     * Enables the extension by initializing settings and adding the indicator to the panel.
+     */
     enable() {
         IndicatorSettings.initialize(this.getSettings());
         this._indicator = new GridWorkspaceIndicator(this);
         Main.panel.addToStatusArea(this.uuid, this._indicator);
     }
 
+    /**
+     * Disables the extension by destroying the indicator and cleaning up resources.
+     */
     disable() {
         if (this._indicator) {
             this._indicator.destroy();
