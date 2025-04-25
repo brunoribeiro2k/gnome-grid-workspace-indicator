@@ -51,7 +51,7 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
         });
         this.add_child(this._grid);
         this.menu.addAction('Settings', () => {
-            GLib.spawn_command_line_async(`gnome-shell-extension-prefs ${this._extension.metadata.uuid}`);
+            extension.openPreferences();
         });
         this.connect('scroll-event', this._onScroll.bind(this));
         this._buildGrid();
