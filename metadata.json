@@ -3,7 +3,9 @@
   "description": "Grid Workspace Indicator",
   "uuid": "gsi@fett2k.com",
   "shell-version": [
-    "46"
+    "46",
+    "47",
+    "48"
   ],
   "settings-schema": "org.gnome.shell.extensions.gsi"
 }
