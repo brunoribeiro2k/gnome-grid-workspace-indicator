@@ -1,11 +1,14 @@
 {
   "name": "Grid Workspace Indicator",
-  "description": "Grid Workspace Indicator",
+  "description": "Workspace grid indicator for the GNOME Shell top bar.",
   "uuid": "gsi@fett2k.com",
+  "version": 1,
+  "url": "https://github.com/brunoribeiro2k/gnome-grid-workspace-indicator",
   "shell-version": [
     "46",
     "47",
-    "48"
+    "48",
+    "49"
   ],
   "settings-schema": "org.gnome.shell.extensions.gsi"
 }

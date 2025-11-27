@@ -1,50 +1,56 @@
-# Workspace Indicator
+# Grid Workspace Indicator
 
-Workspace Indicator is a GNOME Shell extension that provides a visual grid for managing workspaces. It displays an indicator showing the active workspace and highlights those with open applications.
+Grid Workspace Indicator is a GNOME Shell extension that renders your workspaces as a compact grid in the top bar. It keeps the current workspace highlighted, subtly marks workspaces with running applications, and lets you cycle between them with a quick scroll.
 
-## Features
+## Highlights
 
-1. **Visual Workspace Grid:** Get a clear, visual overview of your available workspaces.
-2. **Workspace Switching:** Scroll over the indicator to switch between workspaces seamlessly.
-3. **Access Preferences:** Modify extension settings easily through the built-in preferences menu.
+- **Accurate workspace state:** The indicator reacts instantly as windows open, close, or move between workspaces.
+- **Touchpad-friendly navigation:** High-resolution scroll events are translated into smooth workspace switching.
+- **Customisable look and feel:** Tweak cell size, shape, colours, and outlines from the preferences dialog.
+- **Lightweight by design:** Only essential GNOME APIs are used and all signal handlers are cleaned up on shutdown.
+
+## Requirements
+
+- GNOME Shell 46, 47, or 48 (as listed in `metadata.json`)
+- GTK 4 / libadwaita for the preferences window
 
 ## Installation
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/yourusername/workspace-indicator.git
-   cd workspace-indicator
-   ```
+```bash
+git clone https://github.com/brunoribeiro2k/gnome-grid-workspace-indicator.git
+cd gnome-grid-workspace-indicator
+make install
+```
 
-2. **Install the extension:**
-   ```bash
-   make install
-   ```
+The Makefile compiles the bundled GSettings schema and installs the extension into `~/.local/share/gnome-shell/extensions/gsi@fett2k.com`.
 
-3. **Compile Settings Schema (if applicable):**  
-   The installation process automatically compiles the GSettings schemas. If you modify any schema, re-run:
-   ```bash
-   make compile-schemas
-   ```
+Restart GNOME Shell (press `Alt+F2`, run `r`, then press Enter) and enable the extension via the Extensions app or with:
 
-4. **Restart GNOME Shell and enable the extension:**
-   1. Press **Alt + F2**, type `r`, and press **Enter**.
-   2. Enable the extension using the GNOME Extensions application or run:
-      ```bash
-      gnome-extensions enable gsi@fett2k.com
-      ```
+```bash
+gnome-extensions enable gsi@fett2k.com
+```
+
+## Updating
+
+Pull the latest changes and reinstall:
+
+```bash
+git pull
+make install
+```
 
 ## Uninstallation
 
-1. To uninstall the extension, run:
-   ```bash
-   make uninstall
-   ```
+```bash
+make uninstall
+```
 
-2. Then, restart GNOME Shell (Alt+F2, type `r`).
+Restart GNOME Shell once more to remove the indicator from the panel.
 
-## Notes
+## Development
 
-1. **Overview Toggle:** The current version does not support toggling the GNOME Shell overview on click.
-2. **Compatibility:** Ensure your GNOME Shell version is compatible with this extension.
-3. **Customization:** Additional preferences are available via the extension settings. Explore options like cell shape, cell size, and color settings to tailor the indicator to your liking.
+- Run `make compile-schemas` whenever you change `schemas/org.gnome.shell.extensions.gsi.gschema.xml`.
+- Launch the preferences dialog with `gnome-extensions prefs gsi@fett2k.com` for live UI testing.
+- Use `journalctl -f /usr/bin/gnome-shell` to inspect runtime logs.
+
+Contributions and bug reports are welcome. Open an issue with details about your Shell version and any relevant logs so we can reproduce the problem.

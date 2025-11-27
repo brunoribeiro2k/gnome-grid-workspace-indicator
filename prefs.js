@@ -43,7 +43,7 @@ export default class GridWorkspacePreferences extends ExtensionPreferences {
             log('Error: Could not find main_widget in the UI file');
             return;
         }
-        window.add(mainWidget);
+        window.set_child(mainWidget);
         log('Preferences UI loaded successfully.');
 
         // Get settings from the extension.
@@ -95,8 +95,6 @@ export default class GridWorkspacePreferences extends ExtensionPreferences {
         // Reset button functionality: reset all settings.
         const resetButton = builder.get_object('reset_button');
         resetButton.connect('clicked', () => {
-            // settings.reset('grid-visible');
-            // settings.reset('grid-color');
             settings.reset('cell-shape');
             settings.reset('cell-size');
             settings.reset('inactive-fill');

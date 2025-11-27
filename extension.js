@@ -19,10 +19,12 @@ import GObject from 'gi://GObject';
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
+import Meta from 'gi://Meta';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import IndicatorSettings from './indicatorSettings.js';
 
 const WorkspaceManager = global.workspace_manager;
+const SCROLL_THRESHOLD = 0.8;
 
 /**
  * Class representing a grid workspace indicator for the GNOME Shell panel.
@@ -36,12 +38,18 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
      * @param {Object} extension - The extension instance providing metadata and settings.
      */
     _init(extension) {
-        super._init(0.0, _('Workspace Indicator'));
+        super._init(0.0, 'Workspace Indicator');
         this._extension = extension;
         this._settings = IndicatorSettings.instance;
         this._settingsCallback = this._onSettingsChanged.bind(this);
         this._settings.connect(this._settingsCallback);
         this._layoutProperties = {};
+        this._cells = [];
+        this._signals = [];
+        this._workspaceWindowSignals = [];
+        this._pendingUpdateId = 0;
+        this._pendingRebuildId = 0;
+        this._scrollAccumulator = 0;
         this._grid = new St.Widget({
             layout_manager: new Clutter.GridLayout(),
             reactive: true,
@@ -54,10 +62,8 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
             extension.openPreferences();
         });
         this.connect('scroll-event', this._onScroll.bind(this));
+        this._watchWorkspaceManager();
         this._buildGrid();
-        this._workspaceSignal = WorkspaceManager.connect('active-workspace-changed', this._updateCells.bind(this));
-        this._wsAddedId = WorkspaceManager.connect('workspace-added', this._onWorkspaceChanged.bind(this));
-        this._wsRemovedId = WorkspaceManager.connect('workspace-removed', this._onWorkspaceChanged.bind(this));
         this._updateCells();
         this._updateGridOutline();
     }
@@ -82,7 +88,7 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
         return new St.Widget({
             width: this._layoutProperties.widgetSize,
             height: this._layoutProperties.widgetSize,
-            style_class: 'workspace-cell inactive',
+            style_class: 'workspace-cell',
             reactive: false,
         });
     }
@@ -126,41 +132,33 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
      * @returns {Object} An object containing {@code coreSize} and {@code margin}.
      * @private
      */
-	_calculateCellLayout(maxSide, numCells, occupationPercentage) {
-		// Calculate the maximum size available per cell (integer)
-		const cellSize = Math.floor(maxSide / numCells);
-		
-		// Compute the ideal core size (might be fractional)
-		const idealCore = cellSize * (occupationPercentage / 100);
-		
-		// Start with a candidate core size rounded to nearest integer
-		let candidate = Math.round(idealCore);
-		// Ensure candidate is within valid bounds [0, cellSize]
-		candidate = Math.max(0, Math.min(cellSize, candidate));
-		
-		// Adjust candidate so that the remaining space can be evenly split as margins.
-		if ((cellSize - candidate) % 2 !== 0) {
-		  const candidateDown = candidate - 1;
-		  const candidateUp = candidate + 1;
-		  const validDown = candidateDown >= 0 && (cellSize - candidateDown) % 2 === 0;
-		  const validUp = candidateUp <= cellSize && (cellSize - candidateUp) % 2 === 0;
-		  
-		  if (validDown && validUp) {
-			candidate = (Math.abs(candidateDown - idealCore) <= Math.abs(candidateUp - idealCore))
-			  ? candidateDown
-			  : candidateUp;
-		  } else if (validDown) {
-			candidate = candidateDown;
-		  } else if (validUp) {
-			candidate = candidateUp;
-		  }
-		}
-		
-		// Calculate the margin per side.
-		const margin = (cellSize - candidate) / 2;
-		
-		return { coreSize: candidate, margin: margin };
-	}
+    _calculateCellLayout(maxSide, numCells, occupationPercentage) {
+        const safeCells = Math.max(numCells, 1);
+        const cellSize = Math.floor(maxSide / safeCells);
+        const idealCore = cellSize * (occupationPercentage / 100);
+        let candidate = Math.round(idealCore);
+
+        candidate = Math.max(0, Math.min(cellSize, candidate));
+
+        if ((cellSize - candidate) % 2 !== 0) {
+            const candidateDown = candidate - 1;
+            const candidateUp = candidate + 1;
+            const validDown = candidateDown >= 0 && (cellSize - candidateDown) % 2 === 0;
+            const validUp = candidateUp <= cellSize && (cellSize - candidateUp) % 2 === 0;
+
+            if (validDown && validUp) {
+                candidate = Math.abs(candidateDown - idealCore) <= Math.abs(candidateUp - idealCore) ? candidateDown : candidateUp;
+            } else if (validDown) {
+                candidate = candidateDown;
+            } else if (validUp) {
+                candidate = candidateUp;
+            }
+        }
+
+        const margin = Math.max(0, (cellSize - candidate) / 2);
+
+        return { coreSize: candidate, margin };
+    }
 
     /**
      * Builds and lays out the grid of workspace cells based on current settings and workspace layout.
@@ -168,47 +166,43 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
      * @private
      */
     _buildGrid() {
-		this._clearGrid();
-        
+        this._clearGrid();
+
         const gridLayout = this._grid.layout_manager;
         const nRows = Math.max(WorkspaceManager.get_layout_rows(), 1);
         const nColumns = Math.max(WorkspaceManager.get_layout_columns(), 1);
-		console.debug(`Grid layout: ${nRows} rows x ${nColumns} columns`);
-
         const panelHeight = Main.panel.height;
         const auxIndicatorHeight = panelHeight * (this._settings.gridSize / 100);
-		const cellLayout = this._calculateCellLayout(auxIndicatorHeight, nRows, this._settings.cellSize);
-		const cellSize = cellLayout.coreSize;
-		const cellMargin = cellLayout.margin;
 
-		const indicatorHeight = (cellSize + cellMargin) * nRows;
-		const indicatorWidth = (cellSize + cellMargin) * nColumns;
-        const percent = this._settings.cellSize / 100;
-		
+        const cellLayout = this._calculateCellLayout(auxIndicatorHeight, nRows, this._settings.cellSize);
+        const cellSize = cellLayout.coreSize;
+        const cellMargin = cellLayout.margin;
+
+        const indicatorHeight = (cellSize + cellMargin) * nRows;
+        const indicatorWidth = (cellSize + cellMargin) * nColumns;
+        const isCircle = this._settings.cellShape.toLowerCase() === 'circle';
+
         this._layoutProperties = {
-			widgetSize: cellSize,
+            widgetSize: cellSize,
             margin: cellMargin,
-			borderRadius: this._settings.cellShape.toLowerCase() === 'circle' ? (cellSize * percent) / 2 : 0
+            borderRadius: isCircle ? Math.floor(cellSize / 2) : 0,
+            isCircle,
         };
 
-		console.debug(`Building grid: ${JSON.stringify({
-			panelHeight: panelHeight,
-			auxIndicatorHeight: auxIndicatorHeight,
-			indicatorHeight: indicatorHeight,
-			indicatorWidth: indicatorWidth,
-			layoutProperties: this._layoutProperties
-		})}`);
+        const gridWidth = Math.max(1, Math.round(indicatorWidth));
+        const gridHeight = Math.max(1, Math.round(indicatorHeight));
+        this._grid.set_size(gridWidth, gridHeight);
 
-		// Attach cell widgets to the grid layout.
+        // Attach cell widgets to the grid layout.
         for (let row = 0; row < nRows; row++) {
             for (let col = 0; col < nColumns; col++) {
-                const cell = this._settings.cellShape.toLowerCase() === 'circle' 
-                    ? this._createCircleCell() 
-                    : this._createSquareCell();
+                const cell = isCircle ? this._createCircleCell() : this._createSquareCell();
                 this._cells.push(cell);
                 gridLayout.attach(cell, col, row, 1, 1);
             }
         }
+
+        this._rebindWorkspaceWindowSignals();
     }
     
     /**
@@ -220,16 +214,14 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
      * @private
      */
     _updateCell(cell, isActive, hasApps) {
-        let outline = 'none';
-        if (hasApps) {
-            if (!isActive || this._settings.outlineActive) {
-                outline = `${this._settings.appsOutlineThickness}px solid ${this._settings.appsOutlineColor}`;
-            }
-        }
+        const outlineRequired = hasApps || (this._settings.outlineActive && isActive);
+        const outline = outlineRequired ? `${this._settings.appsOutlineThickness}px solid ${this._settings.appsOutlineColor}` : 'none';
+        const borderRadius = this._layoutProperties.isCircle ? this._layoutProperties.borderRadius : 0;
+
         cell.set_style(`
             background-color: ${isActive ? this._settings.activeFill : this._settings.inactiveFill};
             border: ${outline};
-            border-radius: ${this._settings.cellShape.toLowerCase() === 'circle' ? this._layoutProperties.borderRadius : 0}px;
+            border-radius: ${borderRadius}px;
             margin: ${this._layoutProperties.margin}px;
         `);
     }
@@ -240,12 +232,25 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
      * @private
      */
     _updateCells() {
-        let activeIndex = WorkspaceManager.get_active_workspace_index();
-        console.debug(`Active workspace index: ${activeIndex}`);
+        const activeIndex = WorkspaceManager.get_active_workspace_index();
         const workspacesWithApps = this._getWorkspacesWithApps();
+        const totalWorkspaces = WorkspaceManager.get_n_workspaces();
+        const borderRadius = this._layoutProperties.isCircle ? this._layoutProperties.borderRadius : 0;
+
         this._cells.forEach((cell, idx) => {
-            const hasApps = workspacesWithApps.includes(idx);
-            this._updateCell(cell, idx === activeIndex, hasApps);
+            if (idx < totalWorkspaces) {
+                cell.opacity = 255;
+                const hasApps = workspacesWithApps.has(idx);
+                this._updateCell(cell, idx === activeIndex, hasApps);
+            } else {
+                cell.opacity = 96;
+                cell.set_style(`
+                    background-color: transparent;
+                    border: none;
+                    border-radius: ${borderRadius}px;
+                    margin: ${this._layoutProperties.margin}px;
+                `);
+            }
         });
     }
     
@@ -255,11 +260,7 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
      * @private
      */
     _onWorkspaceChanged() {
-        GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-            this._buildGrid();
-            this._updateCells();
-            return GLib.SOURCE_REMOVE;
-        });
+        this._scheduleRebuild();
     }
     
     /**
@@ -271,24 +272,34 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
      * @private
      */
     _onScroll(actor, event) {
-        let direction = event.get_scroll_direction();
-        console.debug(`Scroll event direction: ${direction}`);
-        if (direction === Clutter.ScrollDirection.UP || direction === Clutter.ScrollDirection.DOWN) {
-            let activeIndex = WorkspaceManager.get_active_workspace_index();
-            let n = WorkspaceManager.get_n_workspaces();
-            let newIndex = direction === Clutter.ScrollDirection.UP ? activeIndex - 1 : activeIndex + 1;
-            
-            // Handle wrap-around.
-            if (newIndex < 0) {
-                newIndex = n - 1;
-            } else if (newIndex >= n) {
-                newIndex = 0;
+        const direction = event.get_scroll_direction();
+
+        if (direction === Clutter.ScrollDirection.UP) {
+            this._scrollAccumulator = 0;
+            return this._activateRelativeWorkspace(-1);
+        }
+        if (direction === Clutter.ScrollDirection.DOWN) {
+            this._scrollAccumulator = 0;
+            return this._activateRelativeWorkspace(1);
+        }
+
+        if (direction === Clutter.ScrollDirection.SMOOTH) {
+            const [, deltaY] = event.get_scroll_delta();
+            if (deltaY === 0)
+                return Clutter.EVENT_STOP;
+
+            // Accumulate smooth deltas so high-resolution touchpad gestures still switch workspaces predictably.
+            this._scrollAccumulator += deltaY;
+
+            while (Math.abs(this._scrollAccumulator) >= SCROLL_THRESHOLD) {
+                const step = this._scrollAccumulator > 0 ? 1 : -1;
+                this._activateRelativeWorkspace(step);
+                this._scrollAccumulator -= SCROLL_THRESHOLD * step;
             }
-            
-            let workspace = WorkspaceManager.get_workspace_by_index(newIndex);
-            workspace.activate(global.get_current_time());
+
             return Clutter.EVENT_STOP;
         }
+
         return Clutter.EVENT_PROPAGATE;
     }
     
@@ -299,10 +310,7 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
      * @private
      */
     _onSettingsChanged() {
-        console.debug('Indicator: Settings changed, updating display');
-        this._buildGrid();
-        this._updateCells();
-        this._updateGridOutline();
+        this._scheduleRebuild();
     }
 
     /**
@@ -312,15 +320,33 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
      * @private
      */
     _getWorkspacesWithApps() {
-        let workspacesWithApps = new Set();
-        let windows = global.get_window_actors().map(actor => actor.meta_window);
-        windows.forEach(win => {
-            let ws = win.get_workspace();
-            if (ws) {
-                workspacesWithApps.add(ws.index());
+        const withApps = new Set();
+        const total = WorkspaceManager.get_n_workspaces();
+        const windows = global.get_window_actors().map(actor => actor.meta_window);
+
+        for (const win of windows) {
+            if (!win)
+                continue;
+
+            const windowType = win.get_window_type();
+            if (windowType === Meta.WindowType.DESKTOP || windowType === Meta.WindowType.DOCK)
+                continue;
+
+            if (win.skip_taskbar || win.skip_pager)
+                continue;
+
+            if (win.is_on_all_workspaces()) {
+                for (let index = 0; index < total; index++)
+                    withApps.add(index);
+                continue;
             }
-        });
-        return Array.from(workspacesWithApps);
+
+            const workspace = win.get_workspace();
+            if (workspace)
+                withApps.add(workspace.index());
+        }
+
+        return withApps;
     }
 
     /**
@@ -329,7 +355,10 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
      * @private
      */
     _updateGridOutline() {
-        this._grid.set_style(`border: ${this._settings.gridOutlineThickness} solid ${this._settings.gridOutlineColor};`);
+        const thickness = Math.max(this._settings.gridOutlineThickness, 0);
+        const color = this._settings.gridOutlineColor;
+        const style = thickness === 0 ? 'border: none;' : `border: ${thickness}px solid ${color};`;
+        this._grid.set_style(style);
     }
 
     /**
@@ -337,19 +366,106 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
      */
     destroy() {
         this._settings.disconnect(this._settingsCallback);
-        if (this._workspaceSignal) {
-            WorkspaceManager.disconnect(this._workspaceSignal);
-            this._workspaceSignal = null;
+        this._disconnectWorkspaceWindowSignals();
+        this._disconnectSignals();
+        if (this._pendingUpdateId) {
+            GLib.source_remove(this._pendingUpdateId);
+            this._pendingUpdateId = 0;
         }
-        if (this._wsAddedId) {
-            WorkspaceManager.disconnect(this._wsAddedId);
-            this._wsAddedId = null;
-        }
-        if (this._wsRemovedId) {
-            WorkspaceManager.disconnect(this._wsRemovedId);
-            this._wsRemovedId = null;
+        if (this._pendingRebuildId) {
+            GLib.source_remove(this._pendingRebuildId);
+            this._pendingRebuildId = 0;
         }
         super.destroy();
+    }
+
+    _watchWorkspaceManager() {
+        this._disconnectSignals();
+        this._bindSignal(WorkspaceManager, 'active-workspace-changed', () => this._queueUpdateCells());
+        this._bindSignal(WorkspaceManager, 'workspace-added', () => this._onWorkspaceChanged());
+        this._bindSignal(WorkspaceManager, 'workspace-removed', () => this._onWorkspaceChanged());
+        this._bindSignal(WorkspaceManager, 'notify::layout-columns', () => this._scheduleRebuild());
+        this._bindSignal(WorkspaceManager, 'notify::layout-rows', () => this._scheduleRebuild());
+    }
+
+    _bindSignal(object, signal, callback) {
+        const id = object.connect(signal, callback);
+        this._signals.push([object, id]);
+        return id;
+    }
+
+    _disconnectSignals() {
+        for (const [object, id] of this._signals) {
+            if (object && id)
+                object.disconnect(id);
+        }
+        this._signals = [];
+    }
+
+    _queueUpdateCells() {
+        if (this._pendingUpdateId)
+            return;
+
+        this._pendingUpdateId = GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+            this._pendingUpdateId = 0;
+            this._updateCells();
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    _scheduleRebuild() {
+        if (this._pendingRebuildId)
+            return;
+
+        this._pendingRebuildId = GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+            this._pendingRebuildId = 0;
+            this._buildGrid();
+            this._updateCells();
+            this._updateGridOutline();
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    _rebindWorkspaceWindowSignals() {
+        this._disconnectWorkspaceWindowSignals();
+
+        const windowsCallback = () => this._queueUpdateCells();
+        const total = WorkspaceManager.get_n_workspaces();
+
+        for (let index = 0; index < total; index++) {
+            const workspace = WorkspaceManager.get_workspace_by_index(index);
+            if (!workspace)
+                continue;
+
+            // Track window additions/removals on every workspace so the grid stays accurate.
+            this._workspaceWindowSignals.push([workspace, workspace.connect('window-added', windowsCallback)]);
+            this._workspaceWindowSignals.push([workspace, workspace.connect('window-removed', windowsCallback)]);
+        }
+    }
+
+    _disconnectWorkspaceWindowSignals() {
+        for (const [workspace, id] of this._workspaceWindowSignals) {
+            if (workspace && id)
+                workspace.disconnect(id);
+        }
+        this._workspaceWindowSignals = [];
+    }
+
+    _activateRelativeWorkspace(step) {
+        const total = WorkspaceManager.get_n_workspaces();
+        if (total <= 0)
+            return Clutter.EVENT_STOP;
+
+        const activeIndex = WorkspaceManager.get_active_workspace_index();
+        let newIndex = (activeIndex + step) % total;
+        if (newIndex < 0)
+            newIndex += total;
+
+        const workspace = WorkspaceManager.get_workspace_by_index(newIndex);
+        if (workspace)
+            workspace.activate(global.display.get_current_time_roundtrip());
+
+        return Clutter.EVENT_STOP;
     }
 }
 );

@@ -11,11 +11,13 @@ class IndicatorSettings {
         if (IndicatorSettings.instance) {
             return IndicatorSettings.instance;
         }
+        if (!IndicatorSettings.schema) {
+            throw new Error('IndicatorSettings schema not initialized');
+        }
         this._settings = IndicatorSettings.schema;
         this._loadSettings();
 
         this._settingsChangedId = this._settings.connect('changed', (_settings, key) => {
-            console.debug(`Setting changed: ${key}`);
             this._loadSettings();
             this._notifyCallbacks();
         });
@@ -76,8 +78,8 @@ class IndicatorSettings {
     _loadSettings() {
         // Grid settings.
         this._gridSize = 95;
-        this._gridOutlineThickness = '0px';
-        this._gridOutlineColor = 'white';
+        this._gridOutlineThickness = 0;
+        this._gridOutlineColor = 'transparent';
         // Base cell settings.
         this._cellSize = this._settings.get_int('cell-size');
         this._cellShape = this._settings.get_string('cell-shape');
@@ -96,7 +98,6 @@ class IndicatorSettings {
      * @private
      */
     _notifyCallbacks() {
-        console.debug(`Notifying ${this._callbacks.size} callbacks`);
         this._callbacks.forEach(callback => {
             try {
                 callback();
@@ -125,7 +126,6 @@ class IndicatorSettings {
      * @param {Function} callback - The callback function to add.
      */
     connect(callback) {
-        console.debug('Adding settings callback');
         this._callbacks.add(callback);
     }
 
@@ -135,7 +135,6 @@ class IndicatorSettings {
      * @param {Function} callback - The callback function to remove.
      */
     disconnect(callback) {
-        console.debug('Removing settings callback');
         this._callbacks.delete(callback);
     }
 
