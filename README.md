@@ -1,6 +1,6 @@
 # Workspace Indicator
 
-Workspace Indicator is a GNOME Shell extension that provides a visual grid for managing workspaces. It displays an indicator showing the active workspace and highlights those with open applications.
+Workspace Indicator is a GNOME Shell extension that provides a simple 2D indicator tailored for grid-based workspace layouts. It pairs especially well with the [Workspace Matrix extension](https://extensions.gnome.org/extension/1485/workspace-matrix/), offering a quick glance at your workspace grid while highlighting the active workspace and those containing open applications.
 
 ## Features
 

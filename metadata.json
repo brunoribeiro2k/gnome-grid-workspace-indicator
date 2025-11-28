@@ -1,12 +1,14 @@
 {
   "name": "Grid Workspace Indicator",
-  "description": "Grid Workspace Indicator",
+  "description": "Simple 2D indicator for grid-based workspaces, ideal alongside Workspace Matrix (https://extensions.gnome.org/extension/1485/workspace-matrix/)",
   "uuid": "gsi@fett2k.com",
+  "version": 1,
   "shell-version": [
     "46",
     "47",
     "48",
     "49"
   ],
+  "url": "https://github.com/brunoribeiro2k/gnome-grid-workspace-indicator",
   "settings-schema": "org.gnome.shell.extensions.gsi"
 }

@@ -3,6 +3,8 @@ METADATA = metadata.json
 UUID = $(shell grep -Po '"uuid": *\K"[^"]*"' $(METADATA) | tr -d '"')
 INSTALL_DIR = $(HOME)/.local/share/gnome-shell/extensions/$(UUID)
 SCHEMA_DIR = schemas
+BUNDLE_DIR = dist
+BUNDLE = $(UUID).shell-extension.zip
 
 # Default target
 all:
@@ -18,6 +20,13 @@ install: compile-schemas
 	cp -r * $(INSTALL_DIR)
 	@echo "Extension installed to $(INSTALL_DIR)."
 	@echo "Restart GNOME Shell (Alt+F2, type 'r') and enable the extension."
+
+# Build a distributable zip for GNOME Extensions
+bundle: compile-schemas
+	mkdir -p $(BUNDLE_DIR)
+	rm -f $(BUNDLE_DIR)/$(BUNDLE)
+	gnome-extensions pack --force --out-dir $(BUNDLE_DIR)
+	@echo "Bundle created at $(BUNDLE_DIR)/$(BUNDLE)."
 
 # Uninstall the extension
 uninstall:
