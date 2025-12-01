@@ -54,10 +54,15 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
             extension.openPreferences();
         });
         this.connect('scroll-event', this._onScroll.bind(this));
-        this._buildGrid();
         this._workspaceSignal = WorkspaceManager.connect('active-workspace-changed', this._updateCells.bind(this));
         this._wsAddedId = WorkspaceManager.connect('workspace-added', this._onWorkspaceChanged.bind(this));
         this._wsRemovedId = WorkspaceManager.connect('workspace-removed', this._onWorkspaceChanged.bind(this));
+        
+        // Listen for workspace layout changes to rebuild the grid
+        this._layoutChangedId = WorkspaceManager.connect('notify::layout-rows', this._onWorkspaceChanged.bind(this));
+        this._layoutColumnsChangedId = WorkspaceManager.connect('notify::layout-columns', this._onWorkspaceChanged.bind(this));
+        
+        this._buildGrid();
         this._updateCells();
         this._updateGridOutline();
     }
@@ -348,6 +353,14 @@ class GridWorkspaceIndicator extends PanelMenu.Button {
         if (this._wsRemovedId) {
             WorkspaceManager.disconnect(this._wsRemovedId);
             this._wsRemovedId = null;
+        }
+        if (this._layoutChangedId) {
+            WorkspaceManager.disconnect(this._layoutChangedId);
+            this._layoutChangedId = null;
+        }
+        if (this._layoutColumnsChangedId) {
+            WorkspaceManager.disconnect(this._layoutColumnsChangedId);
+            this._layoutColumnsChangedId = null;
         }
         super.destroy();
     }
