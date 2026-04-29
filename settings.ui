@@ -143,6 +143,17 @@
               </object>
             </child>
             <child>
+              <object class="AdwActionRow" id="row_debug_logging">
+                <property name="title">Enable debug logging</property>
+                <property name="subtitle">Write extra logs to the journal.</property>
+                <child>
+                  <object class="GtkSwitch" id="debug_logging_switch">
+                    <property name="valign">center</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
               <object class="GtkButton" id="reset_button">
                 <property name="label">Reset All Settings</property>
                 <property name="margin-top">12</property>

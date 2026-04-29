@@ -15,7 +15,9 @@ class IndicatorSettings {
         this._loadSettings();
 
         this._settingsChangedId = this._settings.connect('changed', (_settings, key) => {
-            console.debug(`Setting changed: ${key}`);
+            if (this._debugLogging) {
+                console.debug(`Setting changed: ${key}`);
+            }
             this._loadSettings();
             this._notifyCallbacks();
         });
@@ -67,6 +69,9 @@ class IndicatorSettings {
     get outlineActive() {
         return this._outlineActive;
     }
+    get debugLogging() {
+        return this._debugLogging;
+    }
 
     /**
      * Loads settings from the schema and initializes internal properties.
@@ -88,6 +93,8 @@ class IndicatorSettings {
         this._appsOutlineColor = this._settings.get_string('apps-outline-color');
         this._appsOutlineThickness = this._settings.get_int('apps-outline-thickness');
         this._outlineActive = this._settings.get_boolean('outline-active');
+        // Logging settings
+        this._debugLogging = this._settings.get_boolean('debug-logging');
     }
 
     /**
@@ -96,7 +103,9 @@ class IndicatorSettings {
      * @private
      */
     _notifyCallbacks() {
-        console.debug(`Notifying ${this._callbacks.size} callbacks`);
+        if (this._debugLogging) {
+            console.debug(`Notifying ${this._callbacks.size} callbacks`);
+        }
         this._callbacks.forEach(callback => {
             try {
                 callback();
@@ -125,7 +134,9 @@ class IndicatorSettings {
      * @param {Function} callback - The callback function to add.
      */
     connect(callback) {
-        console.debug('Adding settings callback');
+        if (this._debugLogging) {
+            console.debug('Adding settings callback');
+        }
         this._callbacks.add(callback);
     }
 
@@ -135,7 +146,9 @@ class IndicatorSettings {
      * @param {Function} callback - The callback function to remove.
      */
     disconnect(callback) {
-        console.debug('Removing settings callback');
+        if (this._debugLogging) {
+            console.debug('Removing settings callback');
+        }
         this._callbacks.delete(callback);
     }
 

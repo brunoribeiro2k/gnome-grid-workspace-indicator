@@ -43,5 +43,10 @@
     </key>
 
     <!-- Logging settings -->
+    <key name="debug-logging" type="b">
+      <default>false</default>
+      <summary>Enable debug logging</summary>
+      <description>Whether to print debug logs to the journal</description>
+    </key>
   </schema>
 </schemalist>

@@ -29,22 +29,22 @@ export default class GridWorkspacePreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         let extensionDir = getExtensionDir();
         let uiFile = extensionDir + '/settings.ui';
-        log('Loading UI file from: ' + uiFile);
+        console.debug('Loading UI file from: ' + uiFile);
 
         let builder;
         try {
             builder = Gtk.Builder.new_from_file(uiFile);
         } catch (e) {
-            log('Error creating Gtk.Builder: ' + e);
+            console.error('Error creating Gtk.Builder: ' + e);
             return;
         }
         let mainWidget = builder.get_object('main_widget');
         if (!mainWidget) {
-            log('Error: Could not find main_widget in the UI file');
+            console.error('Error: Could not find main_widget in the UI file');
             return;
         }
         window.add(mainWidget);
-        log('Preferences UI loaded successfully.');
+        console.debug('Preferences UI loaded successfully.');
 
         // Get settings from the extension.
         const settings = this.getSettings();
@@ -79,7 +79,7 @@ export default class GridWorkspacePreferences extends ExtensionPreferences {
 
         // Bind apps outline color setting.
         this._bindColorButton(builder, settings, 'apps-outline-color', 'outline_color_button');
-        
+
         // Bind apps outline thickness setting.
         const outlineScale = builder.get_object('outline_thickness_scale');
         settings.bind(
@@ -91,6 +91,9 @@ export default class GridWorkspacePreferences extends ExtensionPreferences {
 
         // Bind switch for outline-active setting.
         this._bindSwitch(builder, settings, 'outline-active', 'outline_active_switch');
+
+        // Bind switch for debug-logging setting.
+        this._bindSwitch(builder, settings, 'debug-logging', 'debug_logging_switch');
 
         // Reset button functionality: reset all settings.
         const resetButton = builder.get_object('reset_button');
@@ -104,6 +107,7 @@ export default class GridWorkspacePreferences extends ExtensionPreferences {
             settings.reset('apps-outline-color');
             settings.reset('apps-outline-thickness');
             settings.reset('outline-active');
+            settings.reset('debug-logging');
         });
     }
 
