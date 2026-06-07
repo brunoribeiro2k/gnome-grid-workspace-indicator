@@ -26,7 +26,7 @@
                       <object class="GtkAdjustment">
                         <property name="lower">50</property>
                         <property name="upper">100</property>
-                        <property name="value">65</property>
+                        <property name="value">75</property>
                         <property name="step-increment">1</property>
                         <property name="page-increment">5</property>
                       </object>
