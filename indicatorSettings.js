@@ -28,9 +28,6 @@ class IndicatorSettings {
 
     /**
      * Getters for settings properties:
-     * - gridSize: number
-     * - gridOutlineThickness: string
-     * - gridOutlineColor: string
      * - cellSize: number
      * - cellShape: string
      * - activeFill: string
@@ -39,15 +36,6 @@ class IndicatorSettings {
      * - appsOutlineThickness: number
      * - outlineActive: boolean
      */
-    get gridSize() {
-        return this._gridSize;
-    }
-    get gridOutlineThickness() {
-        return this._gridOutlineThickness;
-    }
-    get gridOutlineColor() {
-        return this._gridOutlineColor;
-    }
     get cellSize() {
         return this._cellSize;
     }
@@ -79,10 +67,6 @@ class IndicatorSettings {
      * @private
      */
     _loadSettings() {
-        // Grid settings.
-        this._gridSize = 95;
-        this._gridOutlineThickness = '0px';
-        this._gridOutlineColor = 'white';
         // Base cell settings.
         this._cellSize = this._settings.get_int('cell-size');
         this._cellShape = this._settings.get_string('cell-shape');
