@@ -27,8 +27,10 @@ Workspace Indicator is a GNOME Shell extension that provides a simple 2D indicat
    make compile-schemas
    ```
 
-4. **Restart GNOME Shell and enable the extension:**
-   1. Press **Alt + F2**, type `r`, and press **Enter**.
+4. **Reload GNOME Shell and enable the extension:**
+   1. Reload the shell:
+      - **X11:** press **Alt + F2**, type `r`, and press **Enter**.
+      - **Wayland:** log out and back in (the shell cannot reload in place).
    2. Enable the extension using the GNOME Extensions application or run:
       ```bash
       gnome-extensions enable gsi@fett2k.com
@@ -41,7 +43,20 @@ Workspace Indicator is a GNOME Shell extension that provides a simple 2D indicat
    make uninstall
    ```
 
-2. Then, restart GNOME Shell (Alt+F2, type `r`).
+2. Then, reload GNOME Shell (X11: Alt+F2, type `r`, Enter; Wayland: log out/in).
+
+## Development
+
+To test changes without disrupting your session, run the extension in a nested GNOME Shell:
+
+```bash
+make install
+dbus-run-session -- gnome-shell --devkit --wayland
+```
+
+A nested shell window opens; enable the extension inside it with `gnome-extensions enable gsi@fett2k.com`.
+
+> **Note:** the nesting flag is `--devkit` on **GNOME 49+** and `--nested` on **GNOME 48 and earlier**.
 
 ## Notes
 
