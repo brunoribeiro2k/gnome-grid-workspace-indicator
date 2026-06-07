@@ -19,7 +19,9 @@ install: compile-schemas
 	mkdir -p $(INSTALL_DIR)
 	cp -r * $(INSTALL_DIR)
 	@echo "Extension installed to $(INSTALL_DIR)."
-	@echo "Restart GNOME Shell (Alt+F2, type 'r') and enable the extension."
+	@echo "Reload GNOME Shell, then run: gnome-extensions enable $(UUID)"
+	@echo "  X11:     Alt+F2, type 'r', Enter."
+	@echo "  Wayland: log out/in, or test nested: dbus-run-session -- gnome-shell --devkit --wayland"
 
 # Build a distributable zip for GNOME Extensions
 bundle: compile-schemas
@@ -32,4 +34,4 @@ bundle: compile-schemas
 uninstall:
 	rm -rf $(INSTALL_DIR)
 	@echo "Extension uninstalled from $(INSTALL_DIR)."
-	@echo "Restart GNOME Shell (Alt+F2, type 'r')."
+	@echo "Reload GNOME Shell (X11: Alt+F2, type 'r', Enter; Wayland: log out/in)."

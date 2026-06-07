@@ -64,7 +64,6 @@ const GridWorkspaceIndicator = GObject.registerClass(
 
             this._buildGrid();
             this._updateCells();
-            this._updateGridOutline();
         }
 
         /**
@@ -183,7 +182,7 @@ const GridWorkspaceIndicator = GObject.registerClass(
             }
 
             const panelHeight = Main.panel.height;
-            const auxIndicatorHeight = panelHeight * (this._settings.gridSize / 100);
+            const auxIndicatorHeight = panelHeight * 0.95;
             const cellLayout = this._calculateCellLayout(auxIndicatorHeight, nRows, this._settings.cellSize);
             const cellSize = cellLayout.coreSize;
             const cellMargin = cellLayout.margin;
@@ -317,7 +316,6 @@ const GridWorkspaceIndicator = GObject.registerClass(
             }
             this._buildGrid();
             this._updateCells();
-            this._updateGridOutline();
         }
 
         /**
@@ -336,15 +334,6 @@ const GridWorkspaceIndicator = GObject.registerClass(
                 }
             });
             return Array.from(workspacesWithApps);
-        }
-
-        /**
-         * Updates the grid outline based on current settings.
-         *
-         * @private
-         */
-        _updateGridOutline() {
-            this._grid.set_style(`border: ${this._settings.gridOutlineThickness} solid ${this._settings.gridOutlineColor};`);
         }
 
         /**

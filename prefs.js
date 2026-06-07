@@ -98,8 +98,6 @@ export default class GridWorkspacePreferences extends ExtensionPreferences {
         // Reset button functionality: reset all settings.
         const resetButton = builder.get_object('reset_button');
         resetButton.connect('clicked', () => {
-            // settings.reset('grid-visible');
-            // settings.reset('grid-color');
             settings.reset('cell-shape');
             settings.reset('cell-size');
             settings.reset('inactive-fill');
