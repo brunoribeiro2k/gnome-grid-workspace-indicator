@@ -2,7 +2,7 @@
 
 A GNOME Shell extension that draws a small 2D grid in the top panel mirroring a **grid-based** workspace layout. It highlights the active workspace, outlines workspaces that have open windows, and lets you switch workspaces by scrolling over it.
 
-<!-- Screenshot of the indicator in the panel goes here (tracked in #4). -->
+![The Grid Workspace Indicator in the GNOME top panel: a grid mirroring the workspace layout, with the active workspace filled and a workspace with open windows outlined.](docs/screenshot.png)
 
 ## How it works
 
