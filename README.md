@@ -1,53 +1,79 @@
-# Workspace Indicator
+# Grid Workspace Indicator
 
-Workspace Indicator is a GNOME Shell extension that provides a simple 2D indicator tailored for grid-based workspace layouts. It pairs especially well with the [Workspace Matrix extension](https://extensions.gnome.org/extension/1485/workspace-matrix/), offering a quick glance at your workspace grid while highlighting the active workspace and those containing open applications.
+A GNOME Shell extension that draws a small 2D grid in the top panel mirroring a **grid-based** workspace layout. It highlights the active workspace, outlines workspaces that have open windows, and lets you switch workspaces by scrolling over it.
+
+<!-- Screenshot of the indicator in the panel goes here (tracked in #4). -->
+
+## How it works
+
+GNOME only exposes a true 2D workspace grid (rows × columns) when a **static workspace grid** is configured. This extension is built for that layout and pairs naturally with the [Workspace Matrix](https://extensions.gnome.org/extension/1485/workspace-matrix/) extension, which sets up the grid and adds directional navigation.
+
+With the default 1×N linear workspace layout, GNOME reports a single row, so the indicator degrades gracefully to a single row of cells.
 
 ## Features
 
-1. **Visual Workspace Grid:** Get a clear, visual overview of your available workspaces.
-2. **Workspace Switching:** Scroll over the indicator to switch between workspaces seamlessly.
-3. **Access Preferences:** Modify extension settings easily through the built-in preferences menu.
+- **At-a-glance grid** — a compact rows × columns map of your workspaces in the panel.
+- **Active highlight** — the current workspace is filled with its own color.
+- **"Has windows" outline** — workspaces containing open windows are outlined.
+- **Scroll to switch** — scroll up/down over the indicator to cycle workspaces (with wrap-around).
+- **Configurable look** — cell shape, size, fill colors, and outline are all adjustable in preferences.
+
+## Requirements
+
+- GNOME Shell **46–50**.
+- Recommended: [Workspace Matrix](https://extensions.gnome.org/extension/1485/workspace-matrix/) to configure a 2D workspace grid.
 
 ## Installation
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/yourusername/workspace-indicator.git
-   cd workspace-indicator
-   ```
+### From extensions.gnome.org
 
-2. **Install the extension:**
-   ```bash
-   make install
-   ```
+Once published, the extension will be installable from [extensions.gnome.org](https://extensions.gnome.org) via the website toggle or the **Extensions** / **Extension Manager** app. _(Publication is in progress.)_
 
-3. **Compile Settings Schema (if applicable):**  
-   The installation process automatically compiles the GSettings schemas. If you modify any schema, re-run:
-   ```bash
-   make compile-schemas
-   ```
+### From source
 
-4. **Reload GNOME Shell and enable the extension:**
-   1. Reload the shell:
-      - **X11:** press **Alt + F2**, type `r`, and press **Enter**.
-      - **Wayland:** log out and back in (the shell cannot reload in place).
-   2. Enable the extension using the GNOME Extensions application or run:
-      ```bash
-      gnome-extensions enable gsi@fett2k.com
-      ```
+```bash
+git clone https://github.com/brunoribeiro2k/gnome-grid-workspace-indicator.git
+cd gnome-grid-workspace-indicator
+make install
+```
 
-## Uninstallation
+`make install` compiles the GSettings schema and copies the extension into `~/.local/share/gnome-shell/extensions/gsi@fett2k.com`.
 
-1. To uninstall the extension, run:
-   ```bash
-   make uninstall
-   ```
+Then reload GNOME Shell and enable it:
 
-2. Then, reload GNOME Shell (X11: Alt+F2, type `r`, Enter; Wayland: log out/in).
+- **X11:** press <kbd>Alt</kbd>+<kbd>F2</kbd>, type `r`, press <kbd>Enter</kbd>.
+- **Wayland:** log out and back in (the shell cannot reload in place).
+
+```bash
+gnome-extensions enable gsi@fett2k.com
+```
+
+To remove it, run `make uninstall`.
+
+## Usage
+
+- **Switch workspaces:** scroll up or down while hovering over the indicator.
+- **Open settings:** click the indicator and choose **Settings**, or run `gnome-extensions prefs gsi@fett2k.com`.
+
+## Configuration
+
+Open the preferences window (`gnome-extensions prefs gsi@fett2k.com`) to adjust:
+
+| Setting | Description | Default |
+| --- | --- | --- |
+| **Cell shape** | Circle or square cells | Circle |
+| **Cell size** | Cell size as a percentage of the available panel height | 75% |
+| **Active workspace color** | Fill color of the active workspace cell | Opaque white |
+| **Other workspaces color** | Fill color of inactive cells | Translucent grey |
+| **Outline** | Thickness (0–3 px) and color of the outline drawn on workspaces with open windows | 1 px, white |
+| **Apply outline to active workspace** | Also outline the active workspace when it has windows | On |
+| **Enable debug logging** | Write extra logs to the journal | Off |
+
+A **Reset All Settings** button restores every option to its default.
 
 ## Development
 
-To test changes without disrupting your session, run the extension in a nested GNOME Shell:
+To test changes without disrupting your session, run the extension in a **nested** GNOME Shell:
 
 ```bash
 make install
@@ -56,10 +82,20 @@ dbus-run-session -- gnome-shell --devkit --wayland
 
 A nested shell window opens; enable the extension inside it with `gnome-extensions enable gsi@fett2k.com`.
 
-> **Note:** the nesting flag is `--devkit` on **GNOME 49+** and `--nested` on **GNOME 48 and earlier**.
+> The nesting flag is `--devkit` on **GNOME 49+** and `--nested` on **GNOME 48 and earlier**.
 
-## Notes
+Other useful targets and commands:
 
-1. **Overview Toggle:** The current version does not support toggling the GNOME Shell overview on click.
-2. **Compatibility:** Ensure your GNOME Shell version is compatible with this extension.
-3. **Customization:** Additional preferences are available via the extension settings. Explore options like cell shape, cell size, and color settings to tailor the indicator to your liking.
+- `make compile-schemas` — recompile the GSettings schema (needed after editing the `.gschema.xml`).
+- `make bundle` — produce `dist/gsi@fett2k.com.shell-extension.zip` (the artifact uploaded to EGO).
+- Watch shell-side logs: `journalctl -f -o cat /usr/bin/gnome-shell`.
+
+Debug log lines are gated behind the **Enable debug logging** setting.
+
+## Contributing
+
+Commits and pull request titles follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat`, `fix`, `docs`, `refactor`, `chore`, `ci`, …); PR titles are linted in CI. Branch from `main` and open a pull request — merges are squash-only, so the PR title and description become the commit. See [CLAUDE.md](CLAUDE.md) for the full conventions and architecture notes.
+
+## License
+
+Licensed under the [GPL-2.0-or-later](LICENSE).
