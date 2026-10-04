@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<interface>
+<interface domain="gsi@fett2k.com">
   <requires lib="gtk" version="4.0"/>
   <requires lib="adw" version="1.0"/>
 
   <object class="AdwPreferencesPage" id="main_widget">
     <child>
       <object class="AdwPreferencesGroup">
-        <property name="title">Appearance</property>
+        <property name="title" translatable="yes">Appearance</property>
         <child>
           <object class="AdwActionRow" id="row_cells">
-            <property name="title">Cells</property>
+            <property name="title" translatable="yes">Cells</property>
             <child>
               <object class="GtkBox">
                 <property name="spacing">12</property>
@@ -39,8 +39,8 @@
                     <property name="model">
                       <object class="GtkStringList">
                         <items>
-                          <item>Circle</item>
-                          <item>Square</item>
+                          <item translatable="yes">Circle</item>
+                          <item translatable="yes">Square</item>
                         </items>
                       </object>
                     </property>
@@ -55,17 +55,20 @@
 
     <child>
       <object class="AdwPreferencesGroup">
-        <property name="title">Colors</property>
+        <property name="title" translatable="yes">Colors</property>
         <child>
           <object class="AdwActionRow" id="row_active_fill">
-            <property name="title">Active workspace</property>
+            <property name="title" translatable="yes">Active workspace</property>
             <child>
-              <object class="GtkColorButton" id="active_fill_button">
+              <object class="GtkColorDialogButton" id="active_fill_button">
                 <property name="valign">center</property>
                 <property name="width-request">32</property>
-                <property name="use-alpha">true</property>
-                <property name="show-editor">true</property>
-                <property name="title">Active Fill Color</property>
+                <property name="dialog">
+                  <object class="GtkColorDialog">
+                    <property name="title" translatable="yes">Active fill color</property>
+                    <property name="with-alpha">true</property>
+                  </object>
+                </property>
                 <style>
                   <class name="color-button"/>
                 </style>
@@ -75,14 +78,17 @@
         </child>
         <child>
           <object class="AdwActionRow" id="row_inactive_fill">
-            <property name="title">Other workspaces</property>
+            <property name="title" translatable="yes">Other workspaces</property>
             <child>
-              <object class="GtkColorButton" id="inactive_fill_button">
+              <object class="GtkColorDialogButton" id="inactive_fill_button">
                 <property name="valign">center</property>
                 <property name="width-request">32</property>
-                <property name="use-alpha">true</property>
-                <property name="show-editor">true</property>
-                <property name="title">Inactive Fill Color</property>
+                <property name="dialog">
+                  <object class="GtkColorDialog">
+                    <property name="title" translatable="yes">Inactive fill color</property>
+                    <property name="with-alpha">true</property>
+                  </object>
+                </property>
                 <style>
                   <class name="color-button"/>
                 </style>
@@ -95,11 +101,11 @@
 
     <child>
       <object class="AdwPreferencesGroup">
-        <property name="title">Outline &amp; Logging</property>
+        <property name="title" translatable="yes">Outline and logging</property>
         <child>
           <object class="AdwActionRow" id="row_outline">
-            <property name="title">Outline</property>
-            <property name="subtitle">For workspaces with open apps</property>
+            <property name="title" translatable="yes">Outline</property>
+            <property name="subtitle" translatable="yes">For workspaces with open apps</property>
             <child>
               <object class="GtkBox">
                 <property name="spacing">12</property>
@@ -122,12 +128,15 @@
                   </object>
                 </child>
                 <child>
-                  <object class="GtkColorButton" id="outline_color_button">
+                  <object class="GtkColorDialogButton" id="outline_color_button">
                     <property name="valign">center</property>
                     <property name="width-request">32</property>
-                    <property name="use-alpha">true</property>
-                    <property name="show-editor">true</property>
-                    <property name="title">Outline Color</property>
+                    <property name="dialog">
+                      <object class="GtkColorDialog">
+                        <property name="title" translatable="yes">Outline color</property>
+                        <property name="with-alpha">true</property>
+                      </object>
+                    </property>
                     <style>
                       <class name="color-button"/>
                     </style>
@@ -139,7 +148,7 @@
         </child>
         <child>
           <object class="AdwActionRow" id="row_outline_active">
-            <property name="title">Apply outline to active workspace</property>
+            <property name="title" translatable="yes">Apply outline to active workspace</property>
             <child>
               <object class="GtkSwitch" id="outline_active_switch">
                 <property name="valign">center</property>
@@ -149,8 +158,8 @@
         </child>
         <child>
           <object class="AdwActionRow" id="row_debug_logging">
-            <property name="title">Enable debug logging</property>
-            <property name="subtitle">Write extra logs to the journal.</property>
+            <property name="title" translatable="yes">Enable debug logging</property>
+            <property name="subtitle" translatable="yes">Write extra logs to the journal.</property>
             <child>
               <object class="GtkSwitch" id="debug_logging_switch">
                 <property name="valign">center</property>
@@ -165,7 +174,7 @@
       <object class="AdwPreferencesGroup">
         <child>
           <object class="GtkButton" id="reset_button">
-            <property name="label">Reset All Settings</property>
+            <property name="label" translatable="yes">Reset all settings</property>
             <property name="margin-top">12</property>
             <style>
               <class name="destructive-action"/>
