@@ -1,0 +1,7 @@
+# Headless GNOME Shell test image (Fedora). BASE selects the release / GNOME version.
+ARG BASE
+FROM ${BASE}
+RUN dnf -y -q install --setopt=install_weak_deps=False gnome-shell gjs dbus-daemon dbus-tools glib2 unzip \
+      xorg-x11-server-Xwayland mesa-dri-drivers libadwaita gtk4 gsettings-desktop-schemas \
+      abattis-cantarell-fonts adwaita-icon-theme util-linux && dnf clean all && \
+    useradd -m -u 1000 ubuntu
