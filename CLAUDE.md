@@ -73,7 +73,9 @@ for GI namespaces. Both entry points use the GNOME 45+ class style
 - `make install` — compile schemas, then copy the tree into
   `~/.local/share/gnome-shell/extensions/gsi@fett2k.com`.
 - `make bundle` — `gnome-extensions pack` → `dist/gsi@fett2k.com.shell-extension.zip`.
-  This is the artifact uploaded to EGO; the pack step embeds the compiled schema.
+  This is the artifact uploaded to EGO. Non-default files (`indicatorSettings.js`,
+  `settings.ui`, `LICENSE`) are passed via `EXTRA_SOURCES` — add any new module there.
+  The zip ships the schema XML only (no `gschemas.compiled`; not needed on GNOME 46+).
 - `make uninstall` — remove the installed copy.
 - `make build-info` — write `build-info.txt` (`Build <hash>[-dirty] · <commit time>`), shown at
   the bottom of the prefs window. Run automatically by `install` and `bundle`; gitignored.

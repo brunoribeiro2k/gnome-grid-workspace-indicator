@@ -62,8 +62,44 @@ const GridWorkspaceIndicator = GObject.registerClass(
             this._layoutChangedId = WorkspaceManager.connect('notify::layout-rows', this._onWorkspaceChanged.bind(this));
             this._layoutColumnsChangedId = WorkspaceManager.connect('notify::layout-columns', this._onWorkspaceChanged.bind(this));
 
+            // Rebuild when the panel is (re)allocated, e.g. height is still 0 at startup
+            this._panelHeightChangedId = Main.panel.connect('notify::height', this._onWorkspaceChanged.bind(this));
+
+            // Per-workspace window signals, so outlines follow windows opening, closing and moving
+            this._workspaceWindowSignals = [];
+            this._connectWorkspaceWindowSignals();
+
             this._buildGrid();
             this._updateCells();
+        }
+
+        /**
+         * Connects window-added/window-removed on every workspace to repaint the cells.
+         *
+         * @private
+         */
+        _connectWorkspaceWindowSignals() {
+            this._disconnectWorkspaceWindowSignals();
+            for (let i = 0; i < WorkspaceManager.get_n_workspaces(); i++) {
+                const workspace = WorkspaceManager.get_workspace_by_index(i);
+                const ids = [
+                    workspace.connect('window-added', () => this._updateCells()),
+                    workspace.connect('window-removed', () => this._updateCells()),
+                ];
+                this._workspaceWindowSignals.push({ workspace, ids });
+            }
+        }
+
+        /**
+         * Disconnects all per-workspace window signals.
+         *
+         * @private
+         */
+        _disconnectWorkspaceWindowSignals() {
+            this._workspaceWindowSignals.forEach(({ workspace, ids }) => {
+                ids.forEach(id => workspace.disconnect(id));
+            });
+            this._workspaceWindowSignals = [];
         }
 
         /**
@@ -260,12 +296,18 @@ const GridWorkspaceIndicator = GObject.registerClass(
         }
 
         /**
-         * Handler invoked when a workspace is added or removed. Rebuilds the grid accordingly.
+         * Handler invoked when a workspace is added or removed, the layout changes, or the panel
+         * height changes. Schedules a single rebuild of the grid on idle.
          *
          * @private
          */
         _onWorkspaceChanged() {
-            GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+            if (this._rebuildIdleId) {
+                return;
+            }
+            this._rebuildIdleId = GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+                this._rebuildIdleId = null;
+                this._connectWorkspaceWindowSignals();
                 this._buildGrid();
                 this._updateCells();
                 return GLib.SOURCE_REMOVE;
@@ -319,21 +361,22 @@ const GridWorkspaceIndicator = GObject.registerClass(
         }
 
         /**
-         * Determines which workspaces currently have active application windows.
+         * Determines which workspaces currently have application windows. Windows hidden from the
+         * taskbar (e.g. desktop icons) and windows shown on all workspaces are ignored.
          *
-         * @returns {Array<number>} An array of workspace indices with active applications.
+         * @returns {Array<number>} An array of workspace indices with applications.
          * @private
          */
         _getWorkspacesWithApps() {
-            let workspacesWithApps = new Set();
-            let windows = global.get_window_actors().map(actor => actor.meta_window);
-            windows.forEach(win => {
-                let ws = win.get_workspace();
-                if (ws) {
-                    workspacesWithApps.add(ws.index());
+            const workspacesWithApps = [];
+            for (let i = 0; i < WorkspaceManager.get_n_workspaces(); i++) {
+                const hasApps = WorkspaceManager.get_workspace_by_index(i).list_windows()
+                    .some(win => !win.skip_taskbar && !win.is_on_all_workspaces());
+                if (hasApps) {
+                    workspacesWithApps.push(i);
                 }
-            });
-            return Array.from(workspacesWithApps);
+            }
+            return workspacesWithApps;
         }
 
         /**
@@ -360,6 +403,15 @@ const GridWorkspaceIndicator = GObject.registerClass(
             if (this._layoutColumnsChangedId) {
                 WorkspaceManager.disconnect(this._layoutColumnsChangedId);
                 this._layoutColumnsChangedId = null;
+            }
+            if (this._panelHeightChangedId) {
+                Main.panel.disconnect(this._panelHeightChangedId);
+                this._panelHeightChangedId = null;
+            }
+            this._disconnectWorkspaceWindowSignals();
+            if (this._rebuildIdleId) {
+                GLib.Source.remove(this._rebuildIdleId);
+                this._rebuildIdleId = null;
             }
             super.destroy();
         }

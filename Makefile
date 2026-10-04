@@ -6,6 +6,8 @@ SCHEMA_DIR = schemas
 BUNDLE_DIR = dist
 BUNDLE = $(UUID).shell-extension.zip
 BUILD_INFO = build-info.txt
+# Files beyond pack's defaults (extension.js, prefs.js, metadata.json, schemas/)
+EXTRA_SOURCES = indicatorSettings.js settings.ui LICENSE $(BUILD_INFO)
 
 # Default target
 all:
@@ -34,7 +36,7 @@ install: compile-schemas build-info
 bundle: compile-schemas build-info
 	mkdir -p $(BUNDLE_DIR)
 	rm -f $(BUNDLE_DIR)/$(BUNDLE)
-	gnome-extensions pack --force --out-dir $(BUNDLE_DIR) --extra-source=$(BUILD_INFO)
+	gnome-extensions pack --force --out-dir $(BUNDLE_DIR) $(addprefix --extra-source=,$(EXTRA_SOURCES))
 	@echo "Bundle created at $(BUNDLE_DIR)/$(BUNDLE)."
 
 # Uninstall the extension

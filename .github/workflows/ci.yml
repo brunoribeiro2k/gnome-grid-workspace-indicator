@@ -26,6 +26,14 @@ jobs:
       - name: Build bundle
         run: make bundle
 
+      - name: Verify bundle contents
+        run: |
+          listing=$(unzip -Z1 dist/*.shell-extension.zip)
+          for f in metadata.json extension.js indicatorSettings.js prefs.js settings.ui \
+                   schemas/org.gnome.shell.extensions.gsi.gschema.xml; do
+            grep -qx "$f" <<<"$listing" || { echo "::error::$f missing from bundle"; exit 1; }
+          done
+
       - name: Upload bundle artifact
         uses: actions/upload-artifact@v4
         with:
