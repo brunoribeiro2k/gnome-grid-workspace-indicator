@@ -39,6 +39,11 @@ bundle: compile-schemas build-info
 	gnome-extensions pack --force --out-dir $(BUNDLE_DIR) $(addprefix --extra-source=,$(EXTRA_SOURCES))
 	@echo "Bundle created at $(BUNDLE_DIR)/$(BUNDLE)."
 
+# Lint the JavaScript sources (needs `npm ci` once)
+lint:
+	@for f in *.js; do node --check "$$f" || exit 1; done
+	npx eslint .
+
 # Uninstall the extension
 uninstall:
 	rm -rf $(INSTALL_DIR)
