@@ -22,8 +22,6 @@ import GLib from 'gi://GLib';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import IndicatorSettings from './indicatorSettings.js';
 
-const WorkspaceManager = global.workspace_manager;
-
 /**
  * Class representing a grid workspace indicator for the GNOME Shell panel.
  * Extends PanelMenu.Button to integrate into the panel.
@@ -38,6 +36,7 @@ const GridWorkspaceIndicator = GObject.registerClass(
         _init(extension) {
             super._init(0.0, _('Workspace Indicator'));
             this._extension = extension;
+            this._workspaceManager = global.workspace_manager;
             this._settings = IndicatorSettings.instance;
             this._settingsCallback = this._onSettingsChanged.bind(this);
             this._settings.connect(this._settingsCallback);
@@ -54,13 +53,13 @@ const GridWorkspaceIndicator = GObject.registerClass(
                 extension.openPreferences();
             });
             this.connect('scroll-event', this._onScroll.bind(this));
-            this._workspaceSignal = WorkspaceManager.connect('active-workspace-changed', this._updateCells.bind(this));
-            this._wsAddedId = WorkspaceManager.connect('workspace-added', this._onWorkspaceChanged.bind(this));
-            this._wsRemovedId = WorkspaceManager.connect('workspace-removed', this._onWorkspaceChanged.bind(this));
+            this._workspaceSignal = this._workspaceManager.connect('active-workspace-changed', this._updateCells.bind(this));
+            this._wsAddedId = this._workspaceManager.connect('workspace-added', this._onWorkspaceChanged.bind(this));
+            this._wsRemovedId = this._workspaceManager.connect('workspace-removed', this._onWorkspaceChanged.bind(this));
 
             // Listen for workspace layout changes to rebuild the grid
-            this._layoutChangedId = WorkspaceManager.connect('notify::layout-rows', this._onWorkspaceChanged.bind(this));
-            this._layoutColumnsChangedId = WorkspaceManager.connect('notify::layout-columns', this._onWorkspaceChanged.bind(this));
+            this._layoutChangedId = this._workspaceManager.connect('notify::layout-rows', this._onWorkspaceChanged.bind(this));
+            this._layoutColumnsChangedId = this._workspaceManager.connect('notify::layout-columns', this._onWorkspaceChanged.bind(this));
 
             // Rebuild when the panel is (re)allocated, e.g. height is still 0 at startup
             this._panelHeightChangedId = Main.panel.connect('notify::height', this._onWorkspaceChanged.bind(this));
@@ -80,8 +79,8 @@ const GridWorkspaceIndicator = GObject.registerClass(
          */
         _connectWorkspaceWindowSignals() {
             this._disconnectWorkspaceWindowSignals();
-            for (let i = 0; i < WorkspaceManager.get_n_workspaces(); i++) {
-                const workspace = WorkspaceManager.get_workspace_by_index(i);
+            for (let i = 0; i < this._workspaceManager.get_n_workspaces(); i++) {
+                const workspace = this._workspaceManager.get_workspace_by_index(i);
                 const ids = [
                     workspace.connect('window-added', () => this._updateCells()),
                     workspace.connect('window-removed', () => this._updateCells()),
@@ -203,6 +202,31 @@ const GridWorkspaceIndicator = GObject.registerClass(
         }
 
         /**
+         * Resolves the workspace grid dimensions. GNOME reports -1 for a dimension that should be
+         * derived from the workspace count (the default layout is 1 row x -1 columns), so this
+         * mirrors mutter's meta_workspace_manager_calc_workspace_layout().
+         *
+         * @returns {{nRows: number, nColumns: number}} The number of rows and columns.
+         * @private
+         */
+        _getGridDimensions() {
+            const nWorkspaces = Math.max(this._workspaceManager.get_n_workspaces(), 1);
+            let nRows = this._workspaceManager.get_layout_rows();
+            let nColumns = this._workspaceManager.get_layout_columns();
+
+            if (nRows <= 0 && nColumns <= 0) {
+                nColumns = nWorkspaces;
+            }
+            if (nRows <= 0) {
+                nRows = Math.ceil(nWorkspaces / nColumns);
+            } else if (nColumns <= 0) {
+                nColumns = Math.ceil(nWorkspaces / nRows);
+            }
+
+            return { nRows: Math.max(nRows, 1), nColumns: Math.max(nColumns, 1) };
+        }
+
+        /**
          * Builds and lays out the grid of workspace cells based on current settings and workspace layout.
          *
          * @private
@@ -211,8 +235,7 @@ const GridWorkspaceIndicator = GObject.registerClass(
             this._clearGrid();
 
             const gridLayout = this._grid.layout_manager;
-            const nRows = Math.max(WorkspaceManager.get_layout_rows(), 1);
-            const nColumns = Math.max(WorkspaceManager.get_layout_columns(), 1);
+            const { nRows, nColumns } = this._getGridDimensions();
             if (this._settings.debugLogging) {
                 console.debug(`Grid layout: ${nRows} rows x ${nColumns} columns`);
             }
@@ -284,7 +307,7 @@ const GridWorkspaceIndicator = GObject.registerClass(
          * @private
          */
         _updateCells() {
-            let activeIndex = WorkspaceManager.get_active_workspace_index();
+            let activeIndex = this._workspaceManager.get_active_workspace_index();
             if (this._settings.debugLogging) {
                 console.debug(`Active workspace index: ${activeIndex}`);
             }
@@ -328,8 +351,8 @@ const GridWorkspaceIndicator = GObject.registerClass(
                 console.debug(`Scroll event direction: ${direction}`);
             }
             if (direction === Clutter.ScrollDirection.UP || direction === Clutter.ScrollDirection.DOWN) {
-                let activeIndex = WorkspaceManager.get_active_workspace_index();
-                let n = WorkspaceManager.get_n_workspaces();
+                let activeIndex = this._workspaceManager.get_active_workspace_index();
+                let n = this._workspaceManager.get_n_workspaces();
                 let newIndex = direction === Clutter.ScrollDirection.UP ? activeIndex - 1 : activeIndex + 1;
 
                 // Handle wrap-around.
@@ -339,7 +362,7 @@ const GridWorkspaceIndicator = GObject.registerClass(
                     newIndex = 0;
                 }
 
-                let workspace = WorkspaceManager.get_workspace_by_index(newIndex);
+                let workspace = this._workspaceManager.get_workspace_by_index(newIndex);
                 workspace.activate(global.get_current_time());
                 return Clutter.EVENT_STOP;
             }
@@ -369,8 +392,8 @@ const GridWorkspaceIndicator = GObject.registerClass(
          */
         _getWorkspacesWithApps() {
             const workspacesWithApps = [];
-            for (let i = 0; i < WorkspaceManager.get_n_workspaces(); i++) {
-                const hasApps = WorkspaceManager.get_workspace_by_index(i).list_windows()
+            for (let i = 0; i < this._workspaceManager.get_n_workspaces(); i++) {
+                const hasApps = this._workspaceManager.get_workspace_by_index(i).list_windows()
                     .some(win => !win.skip_taskbar && !win.is_on_all_workspaces());
                 if (hasApps) {
                     workspacesWithApps.push(i);
@@ -385,23 +408,23 @@ const GridWorkspaceIndicator = GObject.registerClass(
         destroy() {
             this._settings.disconnect(this._settingsCallback);
             if (this._workspaceSignal) {
-                WorkspaceManager.disconnect(this._workspaceSignal);
+                this._workspaceManager.disconnect(this._workspaceSignal);
                 this._workspaceSignal = null;
             }
             if (this._wsAddedId) {
-                WorkspaceManager.disconnect(this._wsAddedId);
+                this._workspaceManager.disconnect(this._wsAddedId);
                 this._wsAddedId = null;
             }
             if (this._wsRemovedId) {
-                WorkspaceManager.disconnect(this._wsRemovedId);
+                this._workspaceManager.disconnect(this._wsRemovedId);
                 this._wsRemovedId = null;
             }
             if (this._layoutChangedId) {
-                WorkspaceManager.disconnect(this._layoutChangedId);
+                this._workspaceManager.disconnect(this._layoutChangedId);
                 this._layoutChangedId = null;
             }
             if (this._layoutColumnsChangedId) {
-                WorkspaceManager.disconnect(this._layoutColumnsChangedId);
+                this._workspaceManager.disconnect(this._layoutColumnsChangedId);
                 this._layoutColumnsChangedId = null;
             }
             if (this._panelHeightChangedId) {
