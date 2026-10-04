@@ -64,7 +64,7 @@ for GI namespaces. Both entry points use the GNOME 45+ class style
 - `.github/workflows/ci.yml` — on push/PR, installs `glib2.0-bin` + `gnome-shell`,
   compiles schemas, packs the bundle, and uploads it as an artifact.
 - `LICENSE` — GPL-2.0-or-later (matches the SPDX header in `extension.js`).
-- `schemas/gschemas.compiled` and `dist/` are gitignored build artifacts.
+- `schemas/gschemas.compiled`, `build-info.txt` and `dist/` are gitignored build artifacts.
 
 ## Commands
 
@@ -75,6 +75,8 @@ for GI namespaces. Both entry points use the GNOME 45+ class style
 - `make bundle` — `gnome-extensions pack` → `dist/gsi@fett2k.com.shell-extension.zip`.
   This is the artifact uploaded to EGO; the pack step embeds the compiled schema.
 - `make uninstall` — remove the installed copy.
+- `make build-info` — write `build-info.txt` (`Build <hash>[-dirty] · <commit time>`), shown at
+  the bottom of the prefs window. Run automatically by `install` and `bundle`; gitignored.
 
 After installing, reload the shell and enable:
 - **X11:** Alt+F2, type `r`, Enter. **Wayland:** log out/in (no live reload) — or test
