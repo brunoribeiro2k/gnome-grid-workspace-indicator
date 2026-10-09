@@ -11,5 +11,6 @@
     "50"
   ],
   "url": "https://github.com/brunoribeiro2k/gnome-grid-workspace-indicator",
-  "settings-schema": "org.gnome.shell.extensions.gsi"
+  "settings-schema": "org.gnome.shell.extensions.gsi",
+  "gettext-domain": "gsi@fett2k.com"
 }

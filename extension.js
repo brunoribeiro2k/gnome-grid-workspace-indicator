@@ -49,7 +49,7 @@ const GridWorkspaceIndicator = GObject.registerClass(
                 y_align: Clutter.ActorAlign.CENTER,
             });
             this.add_child(this._grid);
-            this.menu.addAction('Settings', () => {
+            this.menu.addAction(_('Settings'), () => {
                 extension.openPreferences();
             });
             this.connect('scroll-event', this._onScroll.bind(this));

@@ -50,7 +50,7 @@ for GI namespaces. Both entry points use the GNOME 45+ class style
   and torn down in `disable()`. Shell-side only.
 - `prefs.js` — `GridWorkspacePreferences extends ExtensionPreferences`. Loads
   `settings.ui` through `Gtk.Builder` and binds each widget to a GSettings key
-  (dropdown, scale, color buttons, spin button, switches) plus a "Reset All Settings"
+  (dropdown, scale, color buttons, spin button, switches) plus a "Reset all settings"
   button.
 - `settings.ui` — GTK 4 / libadwaita `AdwPreferencesPage` consumed by `prefs.js`. Widget
   IDs here are the contract with `prefs.js`.
