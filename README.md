@@ -79,7 +79,7 @@ To test changes without disrupting your session, run the extension in a **nested
 make nested
 ```
 
-This builds the bundle and opens a nested shell window with the extension already enabled. The nested shell gets its own session bus and its own settings database under `dist/nested/`, so nothing it does reaches your real settings or installed extensions. It picks `--devkit` (GNOME 49+) or `--nested` (GNOME 48 and earlier) automatically. Close the window to stop.
+This builds the bundle and opens a nested shell window with the extension already enabled alongside [Workspace Matrix](https://extensions.gnome.org/extension/1485/workspace-matrix/): your installed copy with your rows and columns, or the release from extensions.gnome.org if you don't have it. The nested shell gets its own session bus and its own settings database under `dist/nested/`, so nothing it does reaches your real settings or installed extensions. It picks `--devkit` (GNOME 49+) or `--nested` (GNOME 48 and earlier) automatically. Close the window to stop.
 
 Run `make` to list every target. Other useful targets and commands:
 
