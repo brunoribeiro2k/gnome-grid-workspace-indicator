@@ -9,9 +9,9 @@ BUILD_INFO = build-info.txt
 # Files beyond pack's defaults (extension.js, prefs.js, metadata.json, schemas/)
 EXTRA_SOURCES = indicatorSettings.js settings.ui LICENSE $(BUILD_INFO)
 
-# Default target
-all:
-	@echo "Run 'make install' to install the extension."
+# List the targets with the comment above each one (default target)
+help:
+	@awk '/^# /{c=substr($$0,3);next} /^[a-z-]+:/&&c{split($$0,t,":");printf "  make %-16s %s\n",t[1],c} {c=""}' $(MAKEFILE_LIST)
 
 # Compile the settings schemas
 compile-schemas:
@@ -30,7 +30,11 @@ install: compile-schemas build-info
 	@echo "Extension installed to $(INSTALL_DIR)."
 	@echo "Reload GNOME Shell, then run: gnome-extensions enable $(UUID)"
 	@echo "  X11:     Alt+F2, type 'r', Enter."
-	@echo "  Wayland: log out/in, or test nested: dbus-run-session -- gnome-shell --devkit --wayland"
+	@echo "  Wayland: log out/in, or try it first in a nested shell: make nested"
+
+# Run the bundle in a nested GNOME Shell window, isolated from your session and dconf
+nested: bundle
+	scripts/nested-shell.sh $(BUNDLE_DIR)/$(BUNDLE)
 
 # Build a distributable zip for GNOME Extensions
 bundle: compile-schemas build-info
