@@ -77,6 +77,9 @@ for GI namespaces. Both entry points use the GNOME 45+ class style
   `settings.ui`, `LICENSE`) are passed via `EXTRA_SOURCES` — add any new module there.
   The zip ships the schema XML only (no `gschemas.compiled`; not needed on GNOME 46+).
 - `make uninstall` — remove the installed copy.
+- `make lint` — `node --check` every `*.js`, then ESLint (`eslint.config.js`: recommended rules
+  plus GJS globals; `global` only allowed in shell-side files). Run `npm ci` once first. Dev tooling
+  only — `package.json`/`node_modules` never ship in the bundle.
 - `make build-info` — write `build-info.txt` (`Build <hash>[-dirty] · <commit time>`), shown at
   the bottom of the prefs window. Run automatically by `install` and `bundle`; gitignored.
 
@@ -90,8 +93,8 @@ Watch logs while developing (debug lines are gated behind the **debug logging** 
 - Shell side: `journalctl -f -o cat /usr/bin/gnome-shell`
 - Prefs side: `journalctl -f -o cat | grep -i extension` (prefs runs in its own process)
 
-There is no test runner or linter wired up yet — `make bundle` (which is what CI runs)
-is the closest thing to a build gate. Run it before considering a change done.
+CI runs `make lint` and `make bundle` (plus a bundle-contents check). Run both before
+considering a change done.
 
 ## Conventions / hard rules
 
