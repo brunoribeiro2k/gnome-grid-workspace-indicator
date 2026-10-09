@@ -69,7 +69,7 @@ Open the preferences window (`gnome-extensions prefs gsi@fett2k.com`) to adjust:
 | **Apply outline to active workspace** | Also outline the active workspace when it has windows | On |
 | **Enable debug logging** | Write extra logs to the journal | Off |
 
-A **Reset All Settings** button restores every option to its default.
+A **Reset all settings** button restores every option to its default.
 
 ## Development
 
