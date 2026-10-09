@@ -76,15 +76,12 @@ A **Reset all settings** button restores every option to its default.
 To test changes without disrupting your session, run the extension in a **nested** GNOME Shell:
 
 ```bash
-make install
-dbus-run-session -- gnome-shell --devkit --wayland
+make nested
 ```
 
-A nested shell window opens; enable the extension inside it with `gnome-extensions enable gsi@fett2k.com`.
+This builds the bundle and opens a nested shell window with the extension already enabled alongside [Workspace Matrix](https://extensions.gnome.org/extension/1485/workspace-matrix/): your installed copy with your rows and columns, or the release from extensions.gnome.org if you don't have it. The nested shell gets its own session bus and its own settings database under `dist/nested/`, so nothing it does reaches your real settings or installed extensions. It picks `--devkit` (GNOME 49+) or `--nested` (GNOME 48 and earlier) automatically. Close the window to stop.
 
-> The nesting flag is `--devkit` on **GNOME 49+** and `--nested` on **GNOME 48 and earlier**.
-
-Other useful targets and commands:
+Run `make` to list every target. Other useful targets and commands:
 
 - `make compile-schemas` — recompile the GSettings schema (needed after editing the `.gschema.xml`).
 - `make bundle` — produce `dist/gsi@fett2k.com.shell-extension.zip` (the artifact uploaded to EGO).
