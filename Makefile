@@ -53,3 +53,7 @@ uninstall:
 	rm -rf $(INSTALL_DIR)
 	@echo "Extension uninstalled from $(INSTALL_DIR)."
 	@echo "Reload GNOME Shell (X11: Alt+F2, type 'r', Enter; Wayland: log out/in)."
+
+# Run the headless GNOME Shell checks in a container (needs Docker): make test-shell [GNOME=46..51]
+test-shell: bundle
+	tests/shell/run.sh $(or $(GNOME),50)

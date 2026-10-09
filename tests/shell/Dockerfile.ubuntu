@@ -1,0 +1,15 @@
+# Headless GNOME Shell test image (Ubuntu). BASE selects the release / GNOME version.
+ARG BASE
+FROM ${BASE}
+ENV DEBIAN_FRONTEND=noninteractive
+# EOL releases move to old-releases.ubuntu.com; fall back to it if the regular mirror has dropped us.
+RUN apt-get update || { \
+      for f in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do \
+        [ -f "$f" ] && sed -i -E 's#https?://(archive|security)\.ubuntu\.com#http://old-releases.ubuntu.com#g' "$f"; done; \
+      apt-get update; } && \
+    apt-get install -y --no-install-recommends \
+      gnome-shell gjs dbus dbus-user-session libglib2.0-bin unzip xwayland \
+      libgl1-mesa-dri gir1.2-adw-1 gir1.2-gtk-4.0 gsettings-desktop-schemas \
+      fonts-cantarell adwaita-icon-theme && \
+    rm -rf /var/lib/apt/lists/* && \
+    (id -u 1000 >/dev/null 2>&1 || useradd -m -u 1000 ubuntu)
