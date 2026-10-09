@@ -1,0 +1,80 @@
+name: Shell tests
+
+# Run the headless GNOME Shell suite (tests/shell/) against one bundle, once per
+# shell-version declared in metadata.json. Each version builds its own ~1.5 GB
+# image, so this does not run on every PR: only on PRs that touch metadata.json
+# (release bumps, shell-version changes) or the suite itself, on demand, and from
+# release.yml before a version is tagged.
+on:
+  pull_request:
+    paths:
+      - metadata.json
+      - tests/shell/**
+      - .github/workflows/shell-tests.yml
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+
+    outputs:
+      versions: ${{ steps.versions.outputs.versions }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read declared shell versions
+        id: versions
+        run: echo "versions=$(jq -c '."shell-version"' metadata.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y glib2.0-bin gnome-shell
+
+      - name: Build bundle
+        run: make bundle
+
+      - name: Upload bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: shell-extension-bundle
+          path: dist/*.shell-extension.zip
+          if-no-files-found: error
+
+  test:
+    needs: bundle
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        gnome: ${{ fromJSON(needs.bundle.outputs.versions) }}
+
+    name: GNOME ${{ matrix.gnome }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: shell-extension-bundle
+          path: dist
+
+      - name: Run headless shell checks
+        run: tests/shell/run.sh "${{ matrix.gnome }}" dist/*.shell-extension.zip
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shell-tests-${{ matrix.gnome }}
+          path: dist/shell-tests/${{ matrix.gnome }}/
+          if-no-files-found: ignore

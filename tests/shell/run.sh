@@ -1,8 +1,8 @@
 #!/bin/bash
 # Run the headless GNOME Shell checks against a built bundle in a container.
 # Usage: tests/shell/run.sh [gnome version, default 50] [bundle.zip]
-# One version per run on purpose: each version builds its own image. Running the whole
-# range is left to a future release workflow.
+# One version per run on purpose: each version builds its own image. The whole range runs
+# in .github/workflows/shell-tests.yml, one job per shell-version in metadata.json.
 set -uo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$HERE/../.." && pwd)
