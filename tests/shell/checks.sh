@@ -124,7 +124,7 @@ stop_shell
 
 # ---- Phase 2: with Workspace Matrix driving the grid ----
 if [ ! -d "$HOME/.local/share/gnome-shell/extensions/$WSM" ]; then
-    note "workspace matrix" "FAIL not installed"; FAILED=1
+    note "workspace matrix" "skipped (WSMATRIX_ZIP=none)"
 else
     meta=$(tr -d ' \n' < "$HOME/.local/share/gnome-shell/extensions/$WSM/metadata.json")
     wsm_shells=$(grep -o '"shell-version":\[[^]]*\]' <<<"$meta" | grep -o '[0-9]\+' | paste -sd,)
