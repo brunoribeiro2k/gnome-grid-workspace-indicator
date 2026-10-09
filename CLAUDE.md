@@ -82,6 +82,13 @@ for GI namespaces. Both entry points use the GNOME 45+ class style
   only — `package.json`/`node_modules` never ship in the bundle.
 - `make build-info` — write `build-info.txt` (`Build <hash>[-dirty] · <commit time>`), shown at
   the bottom of the prefs window. Run automatically by `install` and `bundle`; gitignored.
+- `make test-shell [GNOME=46…51]` — build the bundle and run `tests/shell/` in a container for one
+  GNOME version (default 50): a headless `gnome-shell --unsafe-mode` driven over
+  `org.gnome.Shell.Eval` (layout, window outlines, scroll, teardown, lock/unlock) plus a GJS
+  harness for the prefs bindings. Needs Docker; logs/screenshots land in
+  `dist/shell-tests/<version>/`. Local only — each version builds its own image, so running the
+  whole range is left for a future release workflow. The version → image map lives in
+  `tests/shell/run.sh` and should match `shell-version` in `metadata.json`.
 
 After installing, reload the shell and enable:
 - **X11:** Alt+F2, type `r`, Enter. **Wayland:** log out/in (no live reload) — or test
