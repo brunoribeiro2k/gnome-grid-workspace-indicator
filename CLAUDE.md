@@ -86,9 +86,11 @@ for GI namespaces. Both entry points use the GNOME 45+ class style
   GNOME version (default 50): a headless `gnome-shell --unsafe-mode` driven over
   `org.gnome.Shell.Eval` (layout, window outlines, scroll, teardown, lock/unlock) plus a GJS
   harness for the prefs bindings. Needs Docker; logs/screenshots land in
-  `dist/shell-tests/<version>/`. Local only — each version builds its own image, so running the
-  whole range is left for a future release workflow. The version → image map lives in
-  `tests/shell/run.sh` and should match `shell-version` in `metadata.json`.
+  `dist/shell-tests/<version>/`. One version per run — each version builds its own image. The
+  whole range runs in `.github/workflows/shell-tests.yml` (see Releasing). The version → image
+  map lives in `tests/shell/run.sh` and must cover every `shell-version` in `metadata.json`, or
+  the matrix fails.
+- `make release` — open a release PR (see Releasing).
 
 After installing, reload the shell and enable:
 - **X11:** Alt+F2, type `r`, Enter. **Wayland:** log out/in (no live reload) — or test
@@ -148,6 +150,21 @@ How changes land in this repo:
 - **Branch first.** Don't commit to `main` directly; open a PR from a topic branch.
 - `feat` → minor and `fix` → patch in spirit, but the user-facing GNOME `version` in
   `metadata.json` is a separate integer bumped once per EGO upload.
+
+## Releasing
+
+Ported from the sibling Obsidian plugin repos; tags are `v<N>` for the integer `version`.
+
+- `make release` (`scripts/prepare-release.sh`) — from a clean tree at the tip of `origin/main`,
+  bumps `version` in `metadata.json` on `release/v<N>`, commits `chore(release): v<N>`, pushes
+  and opens the PR. It never tags.
+- `shell-tests.yml` — builds the bundle once and runs `tests/shell/run.sh` for every
+  `shell-version` in `metadata.json`. Runs on PRs touching `metadata.json` or `tests/shell/`
+  (so every release PR), on `workflow_dispatch`, and from `release.yml`. Not on ordinary code
+  PRs: each version is a ~1.5 GB image build.
+- `release.yml` — on push to `main`, if `v<version>` has no GitHub release yet: runs the
+  shell-tests matrix, attests the tested zip, pushes the `v<N>` tag and drafts a release with
+  the zip. Otherwise a no-op. Publish the draft, then upload that zip to EGO by hand.
 
 ## Submission tracking
 

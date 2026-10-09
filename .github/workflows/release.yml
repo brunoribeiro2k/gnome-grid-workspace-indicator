@@ -1,0 +1,122 @@
+name: Release
+
+# When a version bump lands on main, test it, tag it and draft a GitHub release.
+# Detection is driven by metadata.json: if its integer `version` has no `v<N>`
+# release yet, this runs the shell-version matrix (shell-tests.yml), pushes the
+# `v<N>` tag and drafts a release with the tested bundle attached. Idempotent:
+# pushes that don't change the version (and re-runs) are a no-op. Uploading the
+# zip to extensions.gnome.org stays manual.
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    # Only main is released, even when dispatched by hand from another branch.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    outputs:
+      tag: ${{ steps.check.outputs.tag }}
+      release: ${{ steps.check.outputs.release }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check whether this version is already released
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="v$(jq -r .version metadata.json)"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists — nothing to do."
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "New version detected: $tag"
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  shell-tests:
+    needs: check
+    if: needs.check.outputs.release == 'true'
+    uses: ./.github/workflows/shell-tests.yml
+
+  release:
+    needs: [check, shell-tests]
+    if: needs.check.outputs.release == 'true'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download tested bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: shell-extension-bundle
+          path: dist
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/*.shell-extension.zip
+
+      - name: Push tag
+        env:
+          TAG: ${{ needs.check.outputs.tag }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+            echo "Tag $TAG already exists — reusing it."
+          else
+            git tag "$TAG"
+            git push origin "$TAG"
+          fi
+
+      - name: Create draft release
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.check.outputs.tag }}
+        run: |
+          url="$(gh release create "$TAG" \
+            --title="$TAG" \
+            --draft \
+            --generate-notes \
+            dist/*.shell-extension.zip)"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Report
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.check.outputs.tag }}
+          URL: ${{ steps.release.outputs.url }}
+        run: |
+          versions="$(jq -r '."shell-version" | join(", ")' metadata.json)"
+          {
+            echo "### 📦 Drafted release \`$TAG\`"
+            echo ""
+            echo "- Shell tests passed on GNOME $versions"
+            echo "- Tag \`$TAG\` pushed"
+            echo "- Draft release with the \`.shell-extension.zip\` (provenance attested)"
+            echo "- Review the notes and publish: $URL"
+            echo "- Then upload the zip at https://extensions.gnome.org/upload/"
+          } >> "$GITHUB_STEP_SUMMARY"
+          gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" \
+            -f body="📦 Drafted release [\`$TAG\`]($URL) from this commit (shell tests passed on GNOME $versions). Review the notes, publish, then upload the zip to extensions.gnome.org."

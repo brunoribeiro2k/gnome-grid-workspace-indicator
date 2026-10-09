@@ -53,3 +53,7 @@ uninstall:
 # Run the headless GNOME Shell checks in a container (needs Docker): make test-shell [GNOME=46..51]
 test-shell: bundle
 	tests/shell/run.sh $(or $(GNOME),50)
+
+# Open a release PR from an up-to-date main: bump metadata.json's version on release/v<N>
+release:
+	@scripts/prepare-release.sh
