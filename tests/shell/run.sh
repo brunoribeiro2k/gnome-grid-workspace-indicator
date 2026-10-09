@@ -2,8 +2,8 @@
 # Run the headless GNOME Shell checks against a built bundle in a container.
 # Usage: tests/shell/run.sh [gnome version, default 50] [bundle.zip]
 # Also installs Workspace Matrix from extensions.gnome.org (or $WSMATRIX_ZIP) for the paired checks.
-# One version per run on purpose: each version builds its own image. Running the whole
-# range is left to a future release workflow.
+# One version per run on purpose: each version builds its own image. The whole range runs
+# in .github/workflows/shell-tests.yml on release PRs (newest four declared shell-versions).
 set -uo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$HERE/../.." && pwd)
@@ -11,6 +11,7 @@ BUNDLE=$(realpath "${2:-$ROOT/dist/gsi@fett2k.com.shell-extension.zip}")
 [ -f "$BUNDLE" ] || { echo "bundle not found: $BUNDLE (run 'make bundle')" >&2; exit 2; }
 
 # GNOME Shell version -> base image (Dockerfile flavour is inferred from the image name).
+# REGISTRY (e.g. public.ecr.aws/docker/library/) prefixes the image to pull from a mirror.
 declare -A BASE=([46]=ubuntu:noble [47]=ubuntu:oracular [48]=ubuntu:plucky [49]=ubuntu:questing [50]=ubuntu:resolute [51]=fedora:45)
 VERSIONS=("${1:-50}")
 WSMATRIX=wsmatrix@martin.zurowietz.de
@@ -23,7 +24,7 @@ for v in "${VERSIONS[@]}"; do
     image=gsi-shell-test:$v
     echo "=== GNOME $v ($base)"
     out="$ROOT/dist/shell-tests/$v"; rm -rf "$out"; mkdir -p "$out"; chmod 777 "$out"
-    docker build -f "$HERE/Dockerfile.$flavour" --build-arg BASE="$base" -t "$image" "$HERE" >"$out/build.log" 2>&1 ||
+    docker build -f "$HERE/Dockerfile.$flavour" --build-arg BASE="${REGISTRY:-}$base" -t "$image" "$HERE" >"$out/build.log" 2>&1 ||
         { tail -20 "$out/build.log"; echo "=== GNOME $v: image build failed"; STATUS=1; continue; }
     # Workspace Matrix, the extension this one pairs with: the latest EGO release for this GNOME
     # version (cached by release), unless WSMATRIX_ZIP points at a specific zip.
