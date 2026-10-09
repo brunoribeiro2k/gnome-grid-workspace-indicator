@@ -51,4 +51,4 @@ test-shell: bundle
 
 # Open a release PR from an up-to-date main: bump metadata.json's version on release/v<N>
 release:
-	scripts/prepare-release.sh
+	@scripts/prepare-release.sh

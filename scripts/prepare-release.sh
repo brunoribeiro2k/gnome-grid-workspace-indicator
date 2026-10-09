@@ -33,11 +33,14 @@ current=$(jq -r .version metadata.json)
 next=$((current + 1))
 tag="v$next"
 branch="release/$tag"
+# Branch first, so a refusal here leaves metadata.json untouched.
+git rev-parse --verify --quiet "refs/heads/$branch" >/dev/null &&
+    die "Branch $branch already exists. Finish or delete it first (git branch -D $branch)."
+git checkout -q -b "$branch"
 sed -i -E "s/(\"version\": *)$current([,}[:space:]])/\1$next\2/" metadata.json
 [ "$(jq -r .version metadata.json)" = "$next" ] || die "Failed to bump the version in metadata.json."
 
 # 4. Commit on the release branch and push.
-git checkout -b "$branch"
 git commit -q -am "chore(release): $tag"
 git push -u origin "$branch"
 
