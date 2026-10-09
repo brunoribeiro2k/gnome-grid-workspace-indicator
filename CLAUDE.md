@@ -71,6 +71,8 @@ for GI namespaces. Both entry points use the GNOME 45+ class style
 - `make` / `make help` — list the targets. It prints the `# comment` line directly above each
   target, so give every new target one.
 - `make nested` — build the bundle and open it in a nested shell (`scripts/nested-shell.sh`)
+  together with Workspace Matrix (copied from the user's install with their rows/columns, else
+  the EGO release for this GNOME, or `WSMATRIX_ZIP=<zip>`),
   with a private session bus and private XDG dirs under `dist/nested/`, so its dconf writes
   (enabled-extensions, the extension's settings) never reach the real database. The script
   aborts if the bus-activated `dconf-service` isn't using the private dir. Never run a test
