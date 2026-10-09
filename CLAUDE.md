@@ -96,7 +96,8 @@ for GI namespaces. Both entry points use the GNOME 45+ class style
   `org.gnome.Shell.Eval` (layout, window outlines, scroll, teardown, lock/unlock) plus a GJS
   harness for the prefs bindings. A second phase restarts the shell with **Workspace Matrix**
   (the latest EGO release for that GNOME, cached in `dist/shell-tests/cache/`, or
-  `WSMATRIX_ZIP=<zip>` to pin one) and checks that the indicator tracks its grid: both enable
+  `WSMATRIX_ZIP=<zip>` to pin one, `WSMATRIX_ZIP=none` to skip it, as CI does; local runs only)
+  and checks that the indicator tracks its grid: both enable
   orders at login, live row/column changes, 2D keyboard navigation (highlight at the right
   row/column), outlines, lock/unlock, and Workspace Matrix being disabled underneath it. JS
   errors fail the run, except those whose stack doesn't touch this extension in the paired
@@ -173,8 +174,9 @@ Ported from the sibling Obsidian plugin repos; tags are `v<N>` for the integer `
 - `make release` (`scripts/prepare-release.sh`) — from a clean tree at the tip of `origin/main`,
   bumps `version` in `metadata.json` on `release/v<N>`, commits `chore(release): v<N>`, pushes
   and opens the PR. It never tags.
-- `shell-tests.yml` — builds the bundle once and runs `tests/shell/run.sh` (including the
-  Workspace Matrix phase) on the **newest four** `shell-version`s in `metadata.json`. Runs only
+- `shell-tests.yml` — builds the bundle once and runs `tests/shell/run.sh` on the **newest
+  four** `shell-version`s in `metadata.json`, without the Workspace Matrix phase
+  (`WSMATRIX_ZIP=none`; that phase is for local runs only). Runs only
   on release PRs (`release/*` → `main`) and on `workflow_dispatch`: each version is a ~1.5 GB
   image build, so ordinary PRs skip it. Base images come from ECR Public's Docker Hub mirror
   (`REGISTRY`), because anonymous Docker Hub pulls from shared runners get rate-limited.

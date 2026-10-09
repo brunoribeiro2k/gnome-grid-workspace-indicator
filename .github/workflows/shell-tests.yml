@@ -1,7 +1,7 @@
 name: Shell tests
 
-# Run the headless GNOME Shell suite (tests/shell/), including the Workspace Matrix
-# phase, against one bundle on the newest four shell-versions declared in metadata.json.
+# Run the headless GNOME Shell suite (tests/shell/) against one bundle on the newest four
+# shell-versions declared in metadata.json. The Workspace Matrix phase is local-only.
 # Each version is a ~1.5 GB image build, so this runs only on release PRs (the
 # release/v<N> branches `make release` opens) and on demand, never on ordinary PRs.
 on:
@@ -70,6 +70,7 @@ jobs:
         # pulls from shared runners get rate-limited (429).
         env:
           REGISTRY: public.ecr.aws/docker/library/
+          WSMATRIX_ZIP: none
         run: tests/shell/run.sh "${{ matrix.gnome }}" dist/*.shell-extension.zip
 
       - name: Upload logs
