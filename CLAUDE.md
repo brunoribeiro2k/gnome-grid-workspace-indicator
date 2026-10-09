@@ -82,8 +82,14 @@ for GI namespaces. Both entry points use the GNOME 45+ class style
 - `make test-shell [GNOME=46…51]` — build the bundle and run `tests/shell/` in a container for one
   GNOME version (default 50): a headless `gnome-shell --unsafe-mode` driven over
   `org.gnome.Shell.Eval` (layout, window outlines, scroll, teardown, lock/unlock) plus a GJS
-  harness for the prefs bindings. Needs Docker; logs/screenshots land in
-  `dist/shell-tests/<version>/`. Local only — each version builds its own image, so running the
+  harness for the prefs bindings. A second phase restarts the shell with **Workspace Matrix**
+  (the latest EGO release for that GNOME, cached in `dist/shell-tests/cache/`, or
+  `WSMATRIX_ZIP=<zip>` to pin one) and checks that the indicator tracks its grid: both enable
+  orders at login, live row/column changes, 2D keyboard navigation (highlight at the right
+  row/column), outlines, lock/unlock, and Workspace Matrix being disabled underneath it. JS
+  errors fail the run, except those whose stack doesn't touch this extension in the paired
+  phase (Workspace Matrix triggers a GNOME `dash.js` error on its own); those are listed.
+  Needs Docker and network; logs/screenshots land in `dist/shell-tests/<version>/`. Local only — each version builds its own image, so running the
   whole range is left for a future release workflow. The version → image map lives in
   `tests/shell/run.sh` and should match `shell-version` in `metadata.json`.
 
