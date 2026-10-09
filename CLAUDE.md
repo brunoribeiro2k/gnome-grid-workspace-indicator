@@ -101,9 +101,11 @@ for GI namespaces. Both entry points use the GNOME 45+ class style
   row/column), outlines, lock/unlock, and Workspace Matrix being disabled underneath it. JS
   errors fail the run, except those whose stack doesn't touch this extension in the paired
   phase (Workspace Matrix triggers a GNOME `dash.js` error on its own); those are listed.
-  Needs Docker and network; logs/screenshots land in `dist/shell-tests/<version>/`. Local only — each version builds its own image, so running the
-  whole range is left for a future release workflow. The version → image map lives in
-  `tests/shell/run.sh` and should match `shell-version` in `metadata.json`.
+  Needs Docker and network; logs/screenshots land in `dist/shell-tests/<version>/`. One
+  version per run — each version builds its own image. The newest four declared versions run
+  in `.github/workflows/shell-tests.yml` on release PRs (see Releasing). The version → image
+  map lives in `tests/shell/run.sh` and must cover them, or the matrix fails.
+- `make release` — open a release PR (see Releasing).
 
 After installing, reload the shell and enable:
 - **X11:** Alt+F2, type `r`, Enter. **Wayland:** log out/in (no live reload) — or test
@@ -163,6 +165,25 @@ How changes land in this repo:
 - **Branch first.** Don't commit to `main` directly; open a PR from a topic branch.
 - `feat` → minor and `fix` → patch in spirit, but the user-facing GNOME `version` in
   `metadata.json` is a separate integer bumped once per EGO upload.
+
+## Releasing
+
+Ported from the sibling Obsidian plugin repos; tags are `v<N>` for the integer `version`.
+
+- `make release` (`scripts/prepare-release.sh`) — from a clean tree at the tip of `origin/main`,
+  bumps `version` in `metadata.json` on `release/v<N>`, commits `chore(release): v<N>`, pushes
+  and opens the PR. It never tags.
+- `shell-tests.yml` — builds the bundle once and runs `tests/shell/run.sh` (including the
+  Workspace Matrix phase) on the **newest four** `shell-version`s in `metadata.json`. Runs only
+  on release PRs (`release/*` → `main`) and on `workflow_dispatch`: each version is a ~1.5 GB
+  image build, so ordinary PRs skip it. Base images come from ECR Public's Docker Hub mirror
+  (`REGISTRY`), because anonymous Docker Hub pulls from shared runners get rate-limited.
+- `release.yml` — on push to `main`, if `v<version>` has no GitHub release yet (and `version`
+  isn't 0, which means "never released"): builds the bundle, attests it, pushes the `v<N>` tag
+  and drafts a release with the zip. Otherwise a no-op. Publish the draft, then upload that zip
+  to EGO by hand.
+- Don't declare a `shell-version` older than the oldest one Workspace Matrix supports on EGO
+  (currently GNOME 40); the extension is meant to run alongside it.
 
 ## Submission tracking
 

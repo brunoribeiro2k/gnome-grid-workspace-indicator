@@ -1,0 +1,81 @@
+name: Shell tests
+
+# Run the headless GNOME Shell suite (tests/shell/), including the Workspace Matrix
+# phase, against one bundle on the newest four shell-versions declared in metadata.json.
+# Each version is a ~1.5 GB image build, so this runs only on release PRs (the
+# release/v<N> branches `make release` opens) and on demand, never on ordinary PRs.
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'release/')
+    runs-on: ubuntu-latest
+
+    outputs:
+      versions: ${{ steps.versions.outputs.versions }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Pick the newest four declared shell versions
+        id: versions
+        run: echo "versions=$(jq -c '."shell-version" | map(tonumber) | sort | .[-4:] | map(tostring)' metadata.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y glib2.0-bin gnome-shell
+
+      - name: Build bundle
+        run: make bundle
+
+      - name: Upload bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: shell-extension-bundle
+          path: dist/*.shell-extension.zip
+          if-no-files-found: error
+
+  test:
+    needs: bundle
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        gnome: ${{ fromJSON(needs.bundle.outputs.versions) }}
+
+    name: GNOME ${{ matrix.gnome }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: shell-extension-bundle
+          path: dist
+
+      - name: Run headless shell checks
+        # Pull base images from ECR Public's mirror of Docker Hub: anonymous Docker Hub
+        # pulls from shared runners get rate-limited (429).
+        env:
+          REGISTRY: public.ecr.aws/docker/library/
+        run: tests/shell/run.sh "${{ matrix.gnome }}" dist/*.shell-extension.zip
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shell-tests-${{ matrix.gnome }}
+          path: dist/shell-tests/${{ matrix.gnome }}/
+          if-no-files-found: ignore
