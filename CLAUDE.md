@@ -68,6 +68,13 @@ for GI namespaces. Both entry points use the GNOME 45+ class style
 
 ## Commands
 
+- `make` / `make help` — list the targets. It prints the `# comment` line directly above each
+  target, so give every new target one.
+- `make nested` — build the bundle and open it in a nested shell (`scripts/nested-shell.sh`)
+  with a private session bus and private XDG dirs under `dist/nested/`, so its dconf writes
+  (enabled-extensions, the extension's settings) never reach the real database. The script
+  aborts if the bus-activated `dconf-service` isn't using the private dir. Never run a test
+  shell, `gsettings set` or `gnome-extensions enable` against the real session instead.
 - `make compile-schemas` — compile the GSettings schema to `schemas/gschemas.compiled`.
   Required after any edit to the `.gschema.xml`, and before the extension will load.
 - `make install` — compile schemas, then copy the tree into
@@ -94,7 +101,7 @@ for GI namespaces. Both entry points use the GNOME 45+ class style
 
 After installing, reload the shell and enable:
 - **X11:** Alt+F2, type `r`, Enter. **Wayland:** log out/in (no live reload) — or test
-  in a nested shell: `dbus-run-session -- gnome-shell --nested --wayland`.
+  in a nested shell first with `make nested`.
 - `gnome-extensions enable gsi@fett2k.com`
 - `gnome-extensions prefs gsi@fett2k.com` — open the preferences window directly.
 
