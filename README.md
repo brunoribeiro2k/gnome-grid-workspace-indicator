@@ -20,7 +20,7 @@ With the default 1×N linear workspace layout, GNOME reports a single row, so th
 
 ## Requirements
 
-- GNOME Shell **46–51**.
+- GNOME Shell **46–50**.
 - Recommended: [Workspace Matrix](https://extensions.gnome.org/extension/1485/workspace-matrix/) to configure a 2D workspace grid.
 
 ## Installation
