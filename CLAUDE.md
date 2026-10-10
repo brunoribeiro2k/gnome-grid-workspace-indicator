@@ -45,7 +45,7 @@ for GI namespaces. Both entry points use the GNOME 45+ class style
   is the `Extension` subclass with `enable()`/`disable()`.
 - `indicatorSettings.js` — `IndicatorSettings`, a **singleton** wrapper around the
   extension's `Gio.Settings`. Caches typed values, exposes them via getters, and runs a
-  small `connect`/`disconnect` callback registry that fires whenever any GSettings key
+  small `addListener`/`removeListener` callback registry that fires whenever any GSettings key
   changes. Initialized in `enable()` via `IndicatorSettings.initialize(this.getSettings())`
   and torn down in `disable()`. Shell-side only.
 - `prefs.js` — `GridWorkspacePreferences extends ExtensionPreferences`. Loads
