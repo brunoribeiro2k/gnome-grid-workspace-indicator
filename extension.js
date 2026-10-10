@@ -39,7 +39,7 @@ const GridWorkspaceIndicator = GObject.registerClass(
             this._workspaceManager = global.workspace_manager;
             this._settings = IndicatorSettings.instance;
             this._settingsCallback = this._onSettingsChanged.bind(this);
-            this._settings.connect(this._settingsCallback);
+            this._settings.addListener(this._settingsCallback);
             this._layoutProperties = {};
             this._grid = new St.Widget({
                 layout_manager: new Clutter.GridLayout(),
@@ -406,7 +406,7 @@ const GridWorkspaceIndicator = GObject.registerClass(
          * Destroys the indicator and disconnects its signals.
          */
         destroy() {
-            this._settings.disconnect(this._settingsCallback);
+            this._settings.removeListener(this._settingsCallback);
             if (this._workspaceSignal) {
                 this._workspaceManager.disconnect(this._workspaceSignal);
                 this._workspaceSignal = null;

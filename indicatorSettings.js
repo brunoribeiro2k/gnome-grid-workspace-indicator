@@ -113,11 +113,12 @@ class IndicatorSettings {
 
 
     /**
-     * Registers a callback to be notified when settings change.
+     * Registers a callback to be notified when settings change. Not a GObject signal: the
+     * callback is removed with removeListener().
      *
      * @param {Function} callback - The callback function to add.
      */
-    connect(callback) {
+    addListener(callback) {
         if (this._debugLogging) {
             console.debug('Adding settings callback');
         }
@@ -129,7 +130,7 @@ class IndicatorSettings {
      *
      * @param {Function} callback - The callback function to remove.
      */
-    disconnect(callback) {
+    removeListener(callback) {
         if (this._debugLogging) {
             console.debug('Removing settings callback');
         }
