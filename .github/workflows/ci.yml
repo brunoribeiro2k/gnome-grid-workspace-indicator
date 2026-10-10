@@ -53,6 +53,9 @@ jobs:
             grep -qx "$f" <<<"$listing" || { echo "::error::$f missing from bundle"; exit 1; }
           done
 
+      - name: Run shexli (EGO static analyzer)
+        run: make shexli
+
       - name: Upload bundle artifact
         uses: actions/upload-artifact@v4
         with:

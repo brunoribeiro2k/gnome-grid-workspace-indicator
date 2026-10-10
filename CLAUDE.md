@@ -86,6 +86,10 @@ for GI namespaces. Both entry points use the GNOME 45+ class style
   `settings.ui`, `LICENSE`) are passed via `EXTRA_SOURCES` — add any new module there.
   The zip ships the schema XML only (no `gschemas.compiled`; not needed on GNOME 46+).
 - `make uninstall` — remove the installed copy.
+- `make shexli` — build the bundle and run [Shexli](https://pypi.org/project/shexli/), the
+  static analyzer the EGO upload page recommends, on the zip. It prints Shexli's report and
+  fails if it finds any error. Shexli is installed in `.venv/` (gitignored), pinned to 0.2.1 with
+  `tree-sitter` 0.25.2, because 0.26.0 makes it segfault on this extension.
 - `make lint` — `node --check` every `*.js`, then ESLint (`eslint.config.js`: recommended rules
   plus GJS globals; `global` only allowed in shell-side files). Run `npm ci` once first. Dev tooling
   only — `package.json`/`node_modules` never ship in the bundle.
@@ -118,8 +122,8 @@ Watch logs while developing (debug lines are gated behind the **debug logging** 
 - Shell side: `journalctl -f -o cat /usr/bin/gnome-shell`
 - Prefs side: `journalctl -f -o cat | grep -i extension` (prefs runs in its own process)
 
-CI runs `make lint` and `make bundle` (plus a bundle-contents check). Run both before
-considering a change done.
+CI runs `make lint`, `make bundle` (plus a bundle-contents check) and `make shexli`. Run them
+before considering a change done.
 
 ## Conventions / hard rules
 
