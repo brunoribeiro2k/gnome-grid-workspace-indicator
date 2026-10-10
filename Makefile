@@ -6,6 +6,7 @@ SCHEMA_DIR = schemas
 BUNDLE_DIR = dist
 BUNDLE = $(UUID).shell-extension.zip
 BUILD_INFO = build-info.txt
+VENV = .venv
 # Files beyond pack's defaults (extension.js, prefs.js, metadata.json, schemas/)
 EXTRA_SOURCES = indicatorSettings.js settings.ui LICENSE $(BUILD_INFO)
 
@@ -42,6 +43,17 @@ bundle: compile-schemas build-info
 	rm -f $(BUNDLE_DIR)/$(BUNDLE)
 	gnome-extensions pack --force --out-dir $(BUNDLE_DIR) $(addprefix --extra-source=,$(EXTRA_SOURCES))
 	@echo "Bundle created at $(BUNDLE_DIR)/$(BUNDLE)."
+
+# Run Shexli, the static analyzer EGO recommends, on the bundle (fails on errors)
+shexli: bundle $(VENV)/bin/shexli
+	$(VENV)/bin/shexli $(BUNDLE_DIR)/$(BUNDLE)
+	@errors=$$($(VENV)/bin/shexli --format json $(BUNDLE_DIR)/$(BUNDLE) | jq '.summary.severity_counts.error // 0'); \
+	[ "$$errors" -eq 0 ] || { echo "shexli: $$errors error(s); EGO will likely reject this bundle"; exit 1; }
+
+# tree-sitter 0.26.0 makes shexli 0.2.1 segfault on this extension; 0.25.2 works
+$(VENV)/bin/shexli:
+	python3 -m venv $(VENV)
+	$(VENV)/bin/pip install -q shexli==0.2.1 tree-sitter==0.25.2
 
 # Lint the JavaScript sources (needs `npm ci` once)
 lint:

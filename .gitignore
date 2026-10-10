@@ -2,3 +2,4 @@ schemas/gschemas.compiled
 dist/
 build-info.txt
 node_modules/
+.venv/
